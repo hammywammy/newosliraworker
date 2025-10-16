@@ -1,6 +1,6 @@
 import type { Context } from 'hono';
-import { getEnhancedConfigManager } from '../services/enhanced-config-manager.js';
-import { generateRequestId, logger } from '../utils/logger.js';
+import { getEnhancedConfigManager } from '@/infrastructure/config/config-manager.js';
+import { generateRequestId, logger } from '@/shared/utils/logger.util.js';
 
 /**
  * Handle public configuration requests
