@@ -1,5 +1,5 @@
-import { getApiKey } from './enhanced-config-manager.js';
-import { logger } from '../utils/logger.js';
+import { getApiKey } from '@/infrastructure/config/config-manager.js';
+import { logger } from '@/shared/utils/logger.util.js';
 
 interface ModelConfig {
   name: string;
