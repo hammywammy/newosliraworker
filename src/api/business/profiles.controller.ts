@@ -4,10 +4,11 @@
 // ===============================================================================
 
 import type { Context } from 'hono';
-import type { Env } from '../types/interfaces.js';
-import { generateRequestId, logger } from '../utils/logger.js';
-import { createStandardResponse } from '../utils/response.js';
-import { validateJWTToken, extractUserFromJWT } from '../utils/auth.js';
+import type { Env } from '@/shared/types/index.js';
+import { generateRequestId, logger } from '@/shared/utils/logger.util.js';
+import { createStandardResponse } from '@/shared/utils/response.util.js';
+import { validateJWTToken, extractUserFromJWT } from '@/shared/utils/auth.util.js';
+const { getApiKey } = await import('@/infrastructure/config/config-manager.js');
 
 // ===============================================================================
 // HELPER: GET SUPABASE CONFIG FROM AWS (CACHED PER REQUEST)
