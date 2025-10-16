@@ -3,9 +3,10 @@
 // Token limit increased to 2000, prompts condensed, maximized intelligence
 // ===============================================================================
 
-import { UniversalAIAdapter } from './universal-ai-adapter.js';
-import { logger } from '../utils/logger.js';
-import type { ProfileData } from '../types/interfaces.js';
+import type { ProfileData } from '@/shared/types/index.js';
+import { UniversalAIAdapter } from './universal-adapter.service.js';
+import { buildOutreachMessagePrompt } from './prompts.js';
+import { logger } from '@/shared/utils/logger.util.js';
 
 export interface OutreachResult {
   outreach_message: string;
