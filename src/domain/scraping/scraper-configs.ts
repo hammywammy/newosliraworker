@@ -1,4 +1,4 @@
-import type { Env } from '../types/interfaces.js';
+import type { Env } from '@/shared/types/index.js';
 
 export interface ScraperConfig {
   name: string;
