@@ -42,7 +42,7 @@ try {
               postsCount: cachedProfile.latestPosts.length
             });
             
-            const { runPreProcessing } = await import('./pre-processor.js');
+            const { runPreProcessing } = await import('@/domain/analysis/pre-processor.service.js');
             const preProcessed = runPreProcessing(cachedProfile);
             
             // Attach to cached profile
@@ -378,7 +378,7 @@ function buildEnhancedProfile(
   
   // NEW: Run pre-processing for deep/xray analysis
   if ((analysisType === 'deep' || analysisType === 'xray') && profile.latestPosts.length > 0) {
-    const { runPreProcessing } = require('./pre-processor.js');
+    const { runPreProcessing } = require('@/domain/analysis/pre-processor.service.js');
     const preProcessed = runPreProcessing(profile);
     
     // Attach pre-processed data to profile
