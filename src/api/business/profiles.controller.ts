@@ -8,7 +8,7 @@ import type { Env } from '@/shared/types/index.js';
 import { generateRequestId, logger } from '@/shared/utils/logger.util.js';
 import { createStandardResponse } from '@/shared/utils/response.util.js';
 import { validateJWTToken, extractUserFromJWT } from '@/shared/utils/auth.util.js';
-const { getApiKey } = await import('@/infrastructure/config/config-manager.js');
+import { getApiKey } from '@/infrastructure/config/config-manager.js';  // ✅ ADD THIS LINE
 
 // ===============================================================================
 // HELPER: GET SUPABASE CONFIG FROM AWS (CACHED PER REQUEST)
@@ -19,15 +19,13 @@ let _cachedServiceRole: string | null = null;
 
 async function getSupabaseUrl(env: Env): Promise<string> {
   if (_cachedSupabaseUrl) return _cachedSupabaseUrl;
-  const { getApiKey } = await import('../services/enhanced-config-manager.js');
-  _cachedSupabaseUrl = await getApiKey('SUPABASE_URL', env, env.APP_ENV);
+  _cachedSupabaseUrl = await getApiKey('SUPABASE_URL', env, env.APP_ENV);  // ✅ JUST USE IT DIRECTLY
   return _cachedSupabaseUrl;
 }
 
 async function getSupabaseServiceRole(env: Env): Promise<string> {
   if (_cachedServiceRole) return _cachedServiceRole;
-  const { getApiKey } = await import('../services/enhanced-config-manager.js');
-  _cachedServiceRole = await getApiKey('SUPABASE_SERVICE_ROLE', env, env.APP_ENV);
+  _cachedServiceRole = await getApiKey('SUPABASE_SERVICE_ROLE', env, env.APP_ENV);  // ✅ JUST USE IT DIRECTLY
   return _cachedServiceRole;
 }
 
