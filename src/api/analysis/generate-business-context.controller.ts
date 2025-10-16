@@ -1,9 +1,9 @@
 //DONT TOUCH THIS FILE, onboarding uses it
 import type { Context } from 'hono';
-import type { Env } from '../types/interfaces.js';
-import { generateRequestId, logger } from '../utils/logger.js';
-import { createStandardResponse } from '../utils/response.js';
-import { UniversalAIAdapter, selectModel } from '../services/universal-ai-adapter.js';
+import type { Env } from '@/shared/types/index.js';
+import { generateRequestId, logger } from '@/shared/utils/logger.util.js';
+import { createStandardResponse } from '@/shared/utils/response.util.js';
+import { extractUserFromJWT } from '@/shared/utils/auth.util.js';
 
 export async function handleGenerateBusinessContext(c: Context<{ Bindings: Env }>): Promise<Response> {
   const requestId = generateRequestId();
