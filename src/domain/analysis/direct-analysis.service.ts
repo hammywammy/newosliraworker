@@ -1,9 +1,9 @@
-import { UniversalAIAdapter } from './universal-ai-adapter.js';
-import { buildSpeedLightAnalysisPrompt, buildDeepAnalysisPrompt, buildXRayAnalysisPrompt, getLightAnalysisJsonSchema, getDeepAnalysisJsonSchema, getXRayAnalysisJsonSchema } from './prompts.js';
-import { logger } from '../utils/logger.js';
-import type { ProfileData } from '../types/interfaces.js';
-import { OutreachGenerator } from './outreach-generator.js';
-import { buildPersonalityAnalysisPrompt, getPersonalityAnalysisJsonSchema } from './prompts.js';
+import { UniversalAIAdapter } from '@/domain/ai/universal-adapter.service.js';
+import { buildSpeedLightAnalysisPrompt, buildDeepAnalysisPrompt, buildXRayAnalysisPrompt, getLightAnalysisJsonSchema, getDeepAnalysisJsonSchema, getXRayAnalysisJsonSchema } from '@/domain/ai/prompts.js';
+import { logger } from '@/shared/utils/logger.util.js';
+import type { ProfileData } from '@/shared/types/index.js';
+import { OutreachGenerator } from '@/domain/ai/outreach-generator.service.js';
+import { buildPersonalityAnalysisPrompt, getPersonalityAnalysisJsonSchema } from '@/domain/ai/prompts.js';
 
 export interface DirectAnalysisResult {
   analysisData: any;
