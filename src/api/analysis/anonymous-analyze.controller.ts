@@ -4,13 +4,13 @@
 // ===============================================================================
 
 import type { Context } from 'hono';
-import type { Env } from '../types/interfaces.js';
-import { generateRequestId, logger } from '../utils/logger.js';
-import { createStandardResponse } from '../utils/response.js';
-import { withScraperRetry } from '../utils/scraper-error-handler.js';
-import { getScraperConfigsAdvanced, validateAndTransformScraperData } from '../services/scraper-configs.js';
-import { getApiKey } from '../services/enhanced-config-manager.js';
-import { extractUsername } from '../utils/validation.js';
+import type { Env } from '@/shared/types/index.js';
+import { generateRequestId, logger } from '@/shared/utils/logger.util.js';
+import { createStandardResponse } from '@/shared/utils/response.util.js';
+import { withScraperRetry } from '@/shared/utils/scraper-error-handler.util.js';
+import { getScraperConfigsAdvanced, validateAndTransformScraperData } from '@/domain/scraping/scraper-configs.js';
+import { getApiKey } from '@/infrastructure/config/config-manager.js';
+import { extractUsername } from '@/shared/utils/validation.util.js';
 
 // ===============================================================================
 // RATE LIMITING WITH CLOUDFLARE KV
