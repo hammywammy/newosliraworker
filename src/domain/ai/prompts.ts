@@ -1,6 +1,5 @@
-import type { ProfileData, BusinessProfile } from '../types/interfaces.js';
-import { logger } from '../utils/logger.js';
-
+import type { ProfileData, BusinessProfile } from '@/shared/types/index.js';
+import { logger } from '@/shared/utils/logger.util.js';
 // ===============================================================================
 // JSON SCHEMAS FOR NEW PAYLOAD STRUCTURE
 // ===============================================================================
