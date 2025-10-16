@@ -4,10 +4,10 @@
 // ===============================================================================
 
 import type { Context } from 'hono';
-import type { Env } from '../types/interfaces.js';
-import { getDashboardLeads } from '../services/database.js';
-import { extractUserFromJWT } from '../utils/auth.js';
-import { generateRequestId, logger } from '../utils/logger.js';
+import type { Env } from '@/shared/types/index.js';
+import { getDashboardLeads } from '@/infrastructure/database/supabase.repository.js';
+import { extractUserFromJWT } from '@/shared/utils/auth.util.js';
+import { generateRequestId, logger } from '@/shared/utils/logger.util.js';
 
 // ===============================================================================
 // AUTHENTICATION HELPER (copied from business-profiles.ts)
