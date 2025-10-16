@@ -3,8 +3,8 @@
 // File: cloudflare-workers/src/utils/auth.ts
 // ===============================================================================
 
-import type { Env } from '../types/interfaces.js';
-import { logger } from './logger.js';
+import type { Env } from '@/shared/types/index.js';
+import { logger } from './logger.util.js';
 import { createClient } from '@supabase/supabase-js';
 
 interface JWTPayload {
