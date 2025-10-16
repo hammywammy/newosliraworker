@@ -1,8 +1,7 @@
 import type { Context } from 'hono';
-import { generateRequestId, logger } from '../utils/logger.js';
-import { callWithRetry } from '../utils/helpers.js';
-import { scrapeInstagramProfile } from '../services/instagram-scraper.js';
-import { validateProfileData } from '../utils/validation.js';
+import type { Env } from '@/shared/types/index.js';
+import { generateRequestId, logger } from '@/shared/utils/logger.util.js';
+import { scrapeInstagramProfile } from '@/domain/scraping/instagram-scraper.service.js';
 
 export async function handleDebugEngagement(c: Context): Promise<Response> {
   const username = c.req.param('username');
