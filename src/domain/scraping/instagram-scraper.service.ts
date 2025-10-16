@@ -1,10 +1,9 @@
-import { ScraperErrorHandler, withScraperRetry } from '../utils/scraper-error-handler.js';
-import { getScraperConfigs, buildScraperUrl, validateAndTransformScraperData, type ScraperConfig } from './scraper-configs.js';
-import { callWithRetry } from '../utils/helpers.js';
-import { validateProfileData } from '../utils/validation.js';
-import { getApiKey } from './enhanced-config-manager.js';
-import { logger } from '../utils/logger.js';
-import type { AnalysisType, Env, ProfileData } from '../types/interfaces.js';
+import type { Env } from '@/shared/types/index.js';
+import { logger } from '@/shared/utils/logger.util.js';
+import { getApiKey } from '@/infrastructure/config/config-manager.js';
+import { getScraperConfigs, validateAndTransformScraperData } from './scraper-configs.js';
+import { callWithRetry } from '@/shared/utils/helpers.util.js';
+import { extractUsername } from '@/shared/utils/validation.util.js';
 
 export async function scrapeInstagramProfile(username: string, analysisType: AnalysisType, env: Env): Promise<ProfileData> {
   // Check R2 cache first for profile data
