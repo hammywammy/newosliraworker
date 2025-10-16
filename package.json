@@ -7,7 +7,10 @@
 "scripts": {
   "dev": "wrangler dev --env staging",
   "dev:prod": "wrangler dev",
+       "typecheck": "tsc --noEmit",
+    "predeploy": "npm run typecheck",
     "deploy": "wrangler deploy",
+    "predeploy:staging": "npm run typecheck",
     "deploy:staging": "wrangler deploy --env staging",
     "tail": "wrangler tail",
     "tail:staging": "wrangler tail --env staging",
