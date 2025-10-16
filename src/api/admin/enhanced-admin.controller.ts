@@ -1,9 +1,9 @@
 import type { Context } from 'hono';
-import { getEnhancedConfigManager } from '../services/enhanced-config-manager.js';
-import { getAWSSecretsManager } from '../services/aws-secrets-manager.js';
-import { generateRequestId, logger } from '../utils/logger.js';
-import { createStandardResponse } from '../utils/response.js';
-import { fetchJson } from '../utils/helpers.js';
+import { getEnhancedConfigManager } from '@/infrastructure/config/config-manager.js';
+import { getAWSSecretsManager } from '@/infrastructure/config/aws-secrets.js';
+import { generateRequestId, logger } from '@/shared/utils/logger.util.js';
+import { createStandardResponse } from '@/shared/utils/response.util.js';
+import { fetchJson } from '@/shared/utils/helpers.util.js';
 
 interface ConfigUpdateRequest {
   keyName: string;
