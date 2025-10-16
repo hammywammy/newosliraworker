@@ -1,9 +1,9 @@
-import { Context } from 'hono';
-import type { Env, AnalysisRequest, ProfileData, AnalysisResponse } from '../types/interfaces.js';
-import { generateRequestId, logger } from '../utils/logger.js';
-import { createStandardResponse } from '../utils/response.js';
-import { normalizeRequest } from '../utils/validation.js';
-import { saveCompleteAnalysis, updateCreditsAndTransaction, fetchUserAndCredits, fetchBusinessProfile, getLeadIdFromRun } from '@/domain/database.js';
+import type { Context } from 'hono';
+import type { Env, AnalysisRequest, ProfileData, AnalysisResponse } from '@/shared/types/index.js';
+import { generateRequestId, logger } from '@/shared/utils/logger.util.js';
+import { createStandardResponse } from '@/shared/utils/response.util.js';
+import { normalizeRequest } from '@/shared/utils/validation.util.js';
+import { saveCompleteAnalysis, updateCreditsAndTransaction, fetchUserAndCredits, fetchBusinessProfile, getLeadIdFromRun } from '@/infrastructure/database/supabase.repository.js';
 
 export async function handleAnalyze(c: Context<{ Bindings: Env }>): Promise<Response> {
   const requestId = generateRequestId();
