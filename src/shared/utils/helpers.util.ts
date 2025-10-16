@@ -1,4 +1,5 @@
-import { logger } from './logger.js';
+import { logger } from './logger.util.js';
+
 export async function fetchJson<T>(url: string, options: RequestInit, timeoutMs: number = 10000): Promise<T> {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
