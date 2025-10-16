@@ -5,7 +5,8 @@ import { createStandardResponse } from '@/shared/utils/response.util.js';
 import { updateCreditsAndTransaction, fetchUserAndCredits, fetchBusinessProfile } from '@/infrastructure/database/supabase.repository.js';
 import { extractUsername, normalizeRequest } from '@/shared/utils/validation.util.js';
 import { getApiKey } from '@/infrastructure/config/config-manager.js';
-
+import { scrapeInstagramProfile } from '@/domain/scraping/instagram-scraper.service.js';
+import { DirectAnalysisExecutor } from '@/domain/analysis/direct-analysis.service.js';
 export async function handleBulkAnalyze(c: Context<{ Bindings: Env }>): Promise<Response> {
   const requestId = generateRequestId();
   
@@ -287,11 +288,9 @@ async function processProfileComplete(
     logger('info', 'Bulk processing profile', { username, analysisType });
 
     // STEP 1: Scrape profile
-    const { scrapeInstagramProfile } = await import('../services/instagram-scraper.js');
     const profileData = await scrapeInstagramProfile(username, analysisType as any, context.env);
 
     // STEP 2: Direct analysis (no pipeline overhead)
-    const { DirectAnalysisExecutor } = await import('../services/direct-analysis.js');
     const directExecutor = new DirectAnalysisExecutor(context.env, context.requestId);
     
     let directResult: any;
