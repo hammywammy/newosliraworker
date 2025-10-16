@@ -1,4 +1,5 @@
-import type { ProfileData } from '../types/interfaces.js';
+import type { ProfileData } from '@/shared/types/index.js';
+import { logger } from '@/shared/utils/logger.util.js';
 
 export interface MicroSnapshot {
   username: string;
