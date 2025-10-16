@@ -1,10 +1,10 @@
 import { Context } from 'hono';
-import type { Env, BulkAnalysisRequest, BulkAnalysisResult, AnalysisResponse } from '../types/interfaces.js';
-import { generateRequestId, logger } from '../utils/logger.js';
-import { createStandardResponse } from '../utils/response.js';
-import { updateCreditsAndTransaction, fetchUserAndCredits, fetchBusinessProfile } from '../services/database.ts';
-import { extractUsername, normalizeRequest } from '../utils/validation.js';
-import { getApiKey } from '../services/enhanced-config-manager.js';  // ← ADD THIS
+import type { Env, BulkAnalysisRequest, BulkAnalysisResult, AnalysisResponse } from '@/shared/types/index.js';
+import { generateRequestId, logger } from '@/shared/utils/logger.util.js';
+import { createStandardResponse } from '@/shared/utils/response.util.js';
+import { updateCreditsAndTransaction, fetchUserAndCredits, fetchBusinessProfile } from '@/infrastructure/database/supabase.repository.js';
+import { extractUsername, normalizeRequest } from '@/shared/utils/validation.util.js';
+import { getApiKey } from '@/infrastructure/config/config-manager.js';
 
 export async function handleBulkAnalyze(c: Context<{ Bindings: Env }>): Promise<Response> {
   const requestId = generateRequestId();
