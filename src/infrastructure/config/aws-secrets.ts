@@ -1,4 +1,4 @@
-import type { Env } from '../types/interfaces.js';
+import type { Env } from '@/shared/types/index.js';
 
 // Local logging function to avoid import issues in Worker environment
 function logger(level: 'info' | 'warn' | 'error', message: string, data?: any) {
