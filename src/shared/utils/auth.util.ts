@@ -64,7 +64,7 @@ const response = await fetch(`${supabaseUrl}/auth/v1/user`, {
 
 export async function extractUserFromJWT(token: string, env: Env, requestId: string = 'default'): Promise<AuthResult> {
   try {
-    const { getApiKey } = await import('../services/enhanced-config-manager.js');
+    const { getApiKey } = await import('@/infrastructure/config/config-manager.js');
     const supabaseUrl = await getApiKey('SUPABASE_URL', env, env.APP_ENV);
     const supabaseAnonKey = await getApiKey('SUPABASE_ANON_KEY', env, env.APP_ENV);
     
