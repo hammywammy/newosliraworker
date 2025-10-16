@@ -1,0 +1,43 @@
+name = "oslira-workers"
+main = "src/index.ts"
+compatibility_date = "2025-01-01"
+compatibility_flags = ["nodejs_compat"]
+
+[vars]
+APP_ENV = "production"
+
+# Production routes
+[[routes]]
+  pattern = "api.oslira.com/*"
+  zone_name = "oslira.com"
+
+# KV Namespace for caching/session data
+[[kv_namespaces]]
+  binding = "OSLIRA_KV"
+  id = "dd86f413c4374811ac253bb9a6567182"
+
+# R2 Bucket for media/cache storage
+[[r2_buckets]]
+  binding = "R2_CACHE_BUCKET"
+  bucket_name = "oslira-preprocessor-cache"
+
+# ===========================
+# STAGING ENVIRONMENT
+# ===========================
+[env.staging]
+name = "oslira-workers-staging"
+
+[env.staging.vars]
+APP_ENV = "staging"
+
+[[env.staging.routes]]
+pattern = "api.oslira.org/*"
+zone_name = "oslira.org"
+
+[[env.staging.kv_namespaces]]
+binding = "OSLIRA_KV"
+id = "dd86f413c4374811ac253bb9a6567182"
+
+[[env.staging.r2_buckets]]
+binding = "R2_CACHE_BUCKET"
+bucket_name = "oslira-preprocessor-cache"
