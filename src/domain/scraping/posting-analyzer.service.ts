@@ -1,5 +1,5 @@
-import type { PostData } from '../types/interfaces.js';
-import { logger } from '../utils/logger.js';
+import type { PostData } from '@/shared/types/index.js';
+import { logger } from '@/shared/utils/logger.util.js';
 
 export interface PostingPatterns {
   postsPerWeek: number;
