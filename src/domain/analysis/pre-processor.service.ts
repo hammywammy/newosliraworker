@@ -1,7 +1,7 @@
-import type { ProfileData } from '../types/interfaces.js';
-import { analyzeContentIntelligence, type ContentIntelligence } from './content-analyzer.js';
-import { analyzePostingPatterns, type PostingPatterns } from './posting-analyzer.js';
-import { logger } from '../utils/logger.js';
+import type { ProfileData } from '@/shared/types/index.js';
+import { analyzeContentIntelligence, type ContentIntelligence } from '@/domain/scraping/content-analyzer.service.js';
+import { analyzePostingPatterns, type PostingPatterns } from '@/domain/scraping/posting-analyzer.service.js';
+import { logger } from '@/shared/utils/logger.util.js';
 
 export interface PreProcessedMetrics {
   engagement: any; // Already exists from calculateRealEngagement
