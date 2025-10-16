@@ -1,4 +1,4 @@
-import { logger } from './logger.js';
+import { logger } from './logger.util.js';
 
 export class ScraperErrorHandler {
   static transformError(error: any, username: string): Error {
