@@ -34,7 +34,7 @@ async function verifyAdminAccess(c: Context<{ Bindings: Env }>): Promise<{ isAdm
       return { isAdmin: false, error: 'Invalid token' };
     }
     
-    const userData = await userResponse.json();
+    const userData = await userResponse.json() as any;
     const userId = userData.id;
     
     // Check if user is admin
@@ -52,9 +52,9 @@ async function verifyAdminAccess(c: Context<{ Bindings: Env }>): Promise<{ isAdm
       return { isAdmin: false, error: 'Failed to verify admin status' };
     }
     
-    const users = await adminCheckResponse.json();
+    const users = await adminCheckResponse.json() as any[];
     
-    if (!users.length || !users[0].is_admin) {
+    if (!Array.isArray(users) || users.length === 0 || !users[0].is_admin) {
       return { isAdmin: false, userId, error: 'User is not an administrator' };
     }
     
@@ -397,7 +397,7 @@ async function getUsersList(c: Context<{ Bindings: Env }>, requestId: string): P
     { headers }
   );
   
-  const users = await response.json();
+  const users = await response.json() as any[];
   const totalCount = response.headers.get('Content-Range')?.split('/')[1] || '0';
   
   logger('info', 'Users list retrieved', { 
@@ -440,7 +440,7 @@ async function searchUsers(c: Context<{ Bindings: Env }>, requestId: string): Pr
     { headers }
   );
   
-  const users = await response.json();
+  const users = await response.json() as any[];
   
   logger('info', 'User search completed', { 
     query, 
@@ -689,7 +689,7 @@ async function getBusinessesList(c: Context<{ Bindings: Env }>, requestId: strin
     { headers }
   );
   
-  const businesses = await response.json();
+  const businesses = await response.json() as any[];
   const totalCount = response.headers.get('Content-Range')?.split('/')[1] || '0';
   
   logger('info', 'Businesses list retrieved', { page, limit, count: businesses.length, requestId });
@@ -726,7 +726,7 @@ async function searchBusinesses(c: Context<{ Bindings: Env }>, requestId: string
     { headers }
   );
   
-  const businesses = await response.json();
+  const businesses = await response.json() as any[];
   
   logger('info', 'Business search completed', { query, results: businesses.length, requestId });
   
