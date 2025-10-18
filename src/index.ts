@@ -9,7 +9,7 @@ const app = new Hono<{ Bindings: Env }>();
 
 app.use('*', cors({
   origin: '*',
-  allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowMethods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'apikey'],
   credentials: false
 }));
@@ -30,7 +30,8 @@ app.get('/', (c) => {
       'domain_driven_design',
       'lazy_loading',
       'path_aliases',
-      'enterprise_grade'
+      'enterprise_grade',
+      'resource_based_rest'
     ]
   });
 });
@@ -59,6 +60,127 @@ app.get('/api/public-config', async (c) => {
 });
 
 // ===============================================================================
+// USER ENDPOINTS
+// ===============================================================================
+
+app.get('/user/profile', async (c) => {
+  const { handleGetUserProfile } = await import('@/api/user/profile.controller.js');
+  return handleGetUserProfile(c);
+});
+
+app.patch('/user/profile', async (c) => {
+  const { handleUpdateUserProfile } = await import('@/api/user/profile.controller.js');
+  return handleUpdateUserProfile(c);
+});
+
+app.get('/user/subscription', async (c) => {
+  const { handleGetUserSubscription } = await import('@/api/user/subscription.controller.js');
+  return handleGetUserSubscription(c);
+});
+
+app.get('/user/usage', async (c) => {
+  const { handleGetUserUsage } = await import('@/api/user/usage.controller.js');
+  return handleGetUserUsage(c);
+});
+
+app.get('/user/usage/history', async (c) => {
+  const { handleGetUserUsageHistory } = await import('@/api/user/usage.controller.js');
+  return handleGetUserUsageHistory(c);
+});
+
+// ===============================================================================
+// CREDITS ENDPOINTS
+// ===============================================================================
+
+app.get('/credits/balance', async (c) => {
+  const { handleGetCreditsBalance } = await import('@/api/credits/balance.controller.js');
+  return handleGetCreditsBalance(c);
+});
+
+app.get('/credits/transactions', async (c) => {
+  const { handleGetCreditsTransactions } = await import('@/api/credits/transactions.controller.js');
+  return handleGetCreditsTransactions(c);
+});
+
+// ===============================================================================
+// BUSINESS PROFILE ENDPOINTS
+// ===============================================================================
+
+app.get('/business-profiles', async (c) => {
+  const { handleBusinessProfiles } = await import('@/api/business/profiles.controller.js');
+  return handleBusinessProfiles(c);
+});
+
+app.post('/business-profiles', async (c) => {
+  const { handleBusinessProfiles } = await import('@/api/business/profiles.controller.js');
+  return handleBusinessProfiles(c);
+});
+
+app.get('/business-profiles/:id', async (c) => {
+  const { handleBusinessProfiles } = await import('@/api/business/profiles.controller.js');
+  return handleBusinessProfiles(c);
+});
+
+app.put('/business-profiles/:id', async (c) => {
+  const { handleBusinessProfiles } = await import('@/api/business/profiles.controller.js');
+  return handleBusinessProfiles(c);
+});
+
+app.patch('/business-profiles/:id', async (c) => {
+  const { handleBusinessProfiles } = await import('@/api/business/profiles.controller.js');
+  return handleBusinessProfiles(c);
+});
+
+app.delete('/business-profiles/:id', async (c) => {
+  const { handleBusinessProfiles } = await import('@/api/business/profiles.controller.js');
+  return handleBusinessProfiles(c);
+});
+
+// ===============================================================================
+// LEADS ENDPOINTS
+// ===============================================================================
+
+// General leads list (flexible filtering/sorting)
+app.get('/leads', async (c) => {
+  const { handleGetLeadsList } = await import('@/api/leads/list.controller.js');
+  return handleGetLeadsList(c);
+});
+
+// Single lead detail
+app.get('/leads/:lead_id', async (c) => {
+  const { handleGetLeadDetail } = await import('@/api/leads/detail.controller.js');
+  return handleGetLeadDetail(c);
+});
+
+// Lead's analysis history
+app.get('/leads/:lead_id/runs', async (c) => {
+  const { handleGetLeadRuns } = await import('@/api/leads/runs.controller.js');
+  return handleGetLeadRuns(c);
+});
+
+// Dashboard view (existing)
+app.get('/v1/leads/dashboard', async (c) => {
+  const { handleGetDashboardLeads } = await import('@/api/leads/dashboard.controller.js');
+  return handleGetDashboardLeads(c);
+});
+
+// ===============================================================================
+// RUNS (ANALYSIS) ENDPOINTS
+// ===============================================================================
+
+// Single run detail (without full payload)
+app.get('/runs/:run_id', async (c) => {
+  const { handleGetRunDetail } = await import('@/api/runs/detail.controller.js');
+  return handleGetRunDetail(c);
+});
+
+// Full analysis payload (lazy-loaded, large data)
+app.get('/runs/:run_id/payload', async (c) => {
+  const { handleGetRunPayload } = await import('@/api/runs/payload.controller.js');
+  return handleGetRunPayload(c);
+});
+
+// ===============================================================================
 // ANALYSIS ENDPOINTS
 // ===============================================================================
 
@@ -80,35 +202,6 @@ app.post('/v1/bulk-analyze', async (c) => {
 app.post('/v1/generate-business-context', async (c) => {
   const { handleGenerateBusinessContext } = await import('@/api/analysis/generate-business-context.controller.js');
   return handleGenerateBusinessContext(c);
-});
-
-// ===============================================================================
-// BUSINESS PROFILE ENDPOINTS
-// ===============================================================================
-
-app.post('/business-profiles', async (c) => {
-  const { handleBusinessProfiles } = await import('@/api/business/profiles.controller.js');
-  return handleBusinessProfiles(c);
-});
-
-app.get('/business-profiles', async (c) => {
-  const { handleBusinessProfiles } = await import('@/api/business/profiles.controller.js');
-  return handleBusinessProfiles(c);
-});
-
-app.get('/business-profiles/:id', async (c) => {
-  const { handleBusinessProfiles } = await import('@/api/business/profiles.controller.js');
-  return handleBusinessProfiles(c);
-});
-
-app.put('/business-profiles/:id', async (c) => {
-  const { handleBusinessProfiles } = await import('@/api/business/profiles.controller.js');
-  return handleBusinessProfiles(c);
-});
-
-app.delete('/business-profiles/:id', async (c) => {
-  const { handleBusinessProfiles } = await import('@/api/business/profiles.controller.js');
-  return handleBusinessProfiles(c);
 });
 
 // ===============================================================================
@@ -261,15 +354,6 @@ app.post('/admin/test-key', async (c) => {
 });
 
 // ===============================================================================
-// LEADS ENDPOINTS
-// ===============================================================================
-
-app.get('/v1/leads/dashboard', async (c) => {
-  const { handleGetDashboardLeads } = await import('@/api/leads/dashboard.controller.js');
-  return handleGetDashboardLeads(c);
-});
-
-// ===============================================================================
 // DEBUG ENDPOINTS
 // ===============================================================================
 
@@ -314,17 +398,26 @@ app.notFound(c => {
       'GET / - Health check',
       'GET /health - Detailed health status',
       'GET /config - Public configuration',
+      'GET /user/profile - User profile',
+      'GET /user/subscription - Subscription details',
+      'GET /user/usage - Current usage stats',
+      'GET /credits/balance - Credit balance',
+      'GET /credits/transactions - Transaction history',
+      'GET /leads - Leads list',
+      'GET /leads/:lead_id - Lead details',
+      'GET /leads/:lead_id/runs - Lead analysis history',
+      'GET /runs/:run_id - Analysis details',
+      'GET /runs/:run_id/payload - Full analysis payload',
       'POST /v1/analyze - Single analysis',
       'POST /v1/analyze-anonymous - Anonymous analysis',
       'POST /v1/bulk-analyze - Bulk analysis',
       'POST /v1/generate-business-context - Business context generation',
-      'POST /business-profiles - Create business profile',
       'GET /business-profiles - List business profiles',
+      'POST /business-profiles - Create business profile',
       'POST /stripe-webhook - Stripe webhook handler',
       'POST /billing/* - Billing endpoints',
       'GET /analytics/* - Analytics endpoints',
       'GET /admin/* - Admin endpoints',
-      'GET /v1/leads/dashboard - Dashboard leads',
       'POST /debug/* - Debug endpoints'
     ]
   }, 404);
