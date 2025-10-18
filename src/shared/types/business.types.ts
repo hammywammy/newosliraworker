@@ -9,4 +9,11 @@ export interface BusinessProfile {
   unique_advantages: string[];
   website: string;
   created_at: string;
+  
+  // ✅ FIX: Add property aliases for code compatibility
+  // These allow existing code to use business_name/business_niche while
+  // maintaining the database schema which uses name/industry
+  business_name?: string;      // Alias for 'name'
+  business_niche?: string;     // Alias for 'industry'
+  business_one_liner?: string; // AI-generated summary field
 }
