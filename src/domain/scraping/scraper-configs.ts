@@ -11,44 +11,45 @@ export interface ScraperConfig {
   fieldMapping: ScraperFieldMapping;
 }
 
+// FIX: Change all arrays to readonly to match the actual constant definitions
 export interface ScraperFieldMapping {
-  username: string[];
-  displayName: string[];
-  bio: string[];
-  followersCount: string[];
-  followingCount: string[];
-  postsCount: string[];
-  isVerified: string[];
-  isPrivate: string[];
-  profilePicUrl: string[];
-  externalUrl: string[];
-  isBusinessAccount: string[];
+  username: readonly string[];        // ← CHANGED from string[]
+  displayName: readonly string[];     // ← CHANGED from string[]
+  bio: readonly string[];             // ← CHANGED from string[]
+  followersCount: readonly string[];  // ← CHANGED from string[]
+  followingCount: readonly string[];  // ← CHANGED from string[]
+  postsCount: readonly string[];      // ← CHANGED from string[]
+  isVerified: readonly string[];      // ← CHANGED from string[]
+  isPrivate: readonly string[];       // ← CHANGED from string[]
+  profilePicUrl: readonly string[];   // ← CHANGED from string[]
+  externalUrl: readonly string[];     // ← CHANGED from string[]
+  isBusinessAccount: readonly string[]; // ← CHANGED from string[]
 }
 
-// Base scraper definitions - NO DUPLICATION
+// Rest of the file stays the same - BASE_SCRAPERS constants already use readonly
 const BASE_SCRAPERS = {
-dS_basic: {
-  name: 'dS_basic',
-  endpoint: 'dSCLg0C3YEZ83HzYX',
-  timeout: 30000,
-  maxRetries: 2,
-  retryDelay: 2000,
-  priority: 2,
-  input: (username: string) => ({
-    usernames: [username]
-  }),
+  dS_basic: {
+    name: 'dS_basic',
+    endpoint: 'dSCLg0C3YEZ83HzYX',
+    timeout: 30000,
+    maxRetries: 2,
+    retryDelay: 2000,
+    priority: 2,
+    input: (username: string) => ({
+      usernames: [username]
+    }),
     fieldMapping: {
-      username: ['username'],
-      displayName: ['fullName', 'displayName'],
-      bio: ['biography', 'bio'],
-      followersCount: ['followersCount'],
-      followingCount: ['followsCount'], // CRITICAL: dS uses followsCount
-      postsCount: ['postsCount'],
-      isVerified: ['verified', 'isVerified'],
-      isPrivate: ['private', 'isPrivate'],
-      profilePicUrl: ['profilePicUrl'],
-      externalUrl: ['externalUrl', 'website'],
-      isBusinessAccount: ['isBusinessAccount']
+      username: ['username'] as const,
+      displayName: ['fullName', 'displayName'] as const,
+      bio: ['biography', 'bio'] as const,
+      followersCount: ['followersCount'] as const,
+      followingCount: ['followsCount'] as const,
+      postsCount: ['postsCount'] as const,
+      isVerified: ['verified', 'isVerified'] as const,
+      isPrivate: ['private', 'isPrivate'] as const,
+      profilePicUrl: ['profilePicUrl'] as const,
+      externalUrl: ['externalUrl', 'website'] as const,
+      isBusinessAccount: ['isBusinessAccount'] as const
     }
   },
   
@@ -150,8 +151,7 @@ dS_basic: {
 } as const;
 
 export function getScraperConfigs(analysisType: 'light' | 'deep' | 'xray'): ScraperConfig[] {
-  // Force dSCLg0C3YEZ83HzYX for all profile scraping - faster and more data
-  return [BASE_SCRAPERS.dS_basic];
+  return [BASE_SCRAPERS.dS_basic]; // ✅ No more type error
 }
 
 // Keep old function for future specialized scraping (posts, stories, etc.)
