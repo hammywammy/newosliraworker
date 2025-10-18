@@ -583,7 +583,7 @@ export function getPreprocessorJsonSchema() {
 }
 
 export function buildPreprocessorPrompt(profile: any): string {
-  const posts = profile.latestPosts?.slice(0, 4).map(p => 
+  const posts = profile.latestPosts?.slice(0, 4).map((p: any) =>
     `"${p.caption?.slice(0, 60)}..." (${p.likesCount}♡)`
   ).join(' | ') || 'No posts';
 
