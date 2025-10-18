@@ -6,6 +6,7 @@
 import type { Env } from '@/shared/types/index.js';
 import { logger } from './logger.util.js';
 import { createClient } from '@supabase/supabase-js';
+import { getApiKey } from '@/infrastructure/config/config-manager.js';
 
 interface JWTPayload {
   sub: string;
@@ -39,16 +40,15 @@ export async function validateJWTToken(token: string, env: Env, requestId: strin
 
 async function verifyJWTSignature(token: string, env: Env): Promise<boolean> {
   try {
-    const { getApiKey } = await import('../services/enhanced-config-manager.js');
     const supabaseUrl = await getApiKey('SUPABASE_URL', env, env.APP_ENV);
-const anonKey = await getApiKey('SUPABASE_ANON_KEY', env, env.APP_ENV);
+    const anonKey = await getApiKey('SUPABASE_ANON_KEY', env, env.APP_ENV);
 
-const response = await fetch(`${supabaseUrl}/auth/v1/user`, {
-  headers: {
-    'Authorization': `Bearer ${token}`,
-    'apikey': anonKey
-  }
-});
+    const response = await fetch(`${supabaseUrl}/auth/v1/user`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'apikey': anonKey
+      }
+    });
 
     return response.ok;
 
@@ -64,7 +64,6 @@ const response = await fetch(`${supabaseUrl}/auth/v1/user`, {
 
 export async function extractUserFromJWT(token: string, env: Env, requestId: string = 'default'): Promise<AuthResult> {
   try {
-    const { getApiKey } = await import('@/infrastructure/config/config-manager.js');
     const supabaseUrl = await getApiKey('SUPABASE_URL', env, env.APP_ENV);
     const supabaseAnonKey = await getApiKey('SUPABASE_ANON_KEY', env, env.APP_ENV);
     
@@ -97,12 +96,15 @@ export async function extractUserFromJWT(token: string, env: Env, requestId: str
 
 export async function verifyUserExists(userId: string, env: Env): Promise<AuthResult> {
   try {
+    const supabaseUrl = await getApiKey('SUPABASE_URL', env, env.APP_ENV);
+    const serviceRole = await getApiKey('SUPABASE_SERVICE_ROLE', env, env.APP_ENV);
+    
     const response = await fetch(
-      `${env.SUPABASE_URL}/rest/v1/users?select=id,email&id=eq.${userId}`,
+      `${supabaseUrl}/rest/v1/users?select=id,email&id=eq.${userId}`,
       {
         headers: {
-          'apikey': env.SUPABASE_SERVICE_ROLE,
-          'Authorization': `Bearer ${env.SUPABASE_SERVICE_ROLE}`,
+          'apikey': serviceRole,
+          'Authorization': `Bearer ${serviceRole}`,
           'Content-Type': 'application/json'
         }
       }
@@ -112,8 +114,9 @@ export async function verifyUserExists(userId: string, env: Env): Promise<AuthRe
       return { isValid: false, error: 'Database query failed' };
     }
 
-    const users = await response.json();
-    if (!users || users.length === 0) {
+    const users = await response.json() as any[];
+    
+    if (!Array.isArray(users) || users.length === 0) {
       return { isValid: false, error: 'User not found' };
     }
 
