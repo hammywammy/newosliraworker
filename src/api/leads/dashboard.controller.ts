@@ -49,6 +49,11 @@ export async function handleGetDashboardLeads(c: Context<{ Bindings: Env }>): Pr
       return c.json({ success: false, error: 'Unauthorized' }, 401);
     }
     
+    // ✅ FIX: Add null check IMMEDIATELY after auth
+    if (!authResult.userId) {
+      return c.json({ success: false, error: 'User ID missing' }, 401);
+    }
+    
     // 2. Get parameters
     const businessId = c.req.query('business_id');
     if (!businessId) {
@@ -65,7 +70,7 @@ export async function handleGetDashboardLeads(c: Context<{ Bindings: Env }>): Pr
     });
     
     const leads = await getDashboardLeads(
-      authResult.userId,
+      authResult.userId, // ← NOW TypeScript knows this is string (not undefined)
       businessId,
       c.env,
       limit
