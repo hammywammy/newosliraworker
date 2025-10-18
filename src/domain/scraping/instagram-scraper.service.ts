@@ -1,9 +1,11 @@
-import type { Env } from '@/shared/types/index.js';
+import type { Env, AnalysisType, ProfileData, PostData } from '@/shared/types/index.js';
 import { logger } from '@/shared/utils/logger.util.js';
 import { getApiKey } from '@/infrastructure/config/config-manager.js';
-import { getScraperConfigs, validateAndTransformScraperData } from './scraper-configs.js';
+import { getScraperConfigs, validateAndTransformScraperData, type ScraperConfig } from './scraper-configs.js';
 import { callWithRetry } from '@/shared/utils/helpers.util.js';
 import { extractUsername } from '@/shared/utils/validation.util.js';
+import { calculateRealEngagement } from '@/shared/utils/engagement.util.js';
+import { validateProfileData } from '@/shared/utils/validation.util.js';
 
 export async function scrapeInstagramProfile(username: string, analysisType: AnalysisType, env: Env): Promise<ProfileData> {
   // Check R2 cache first for profile data
@@ -667,5 +669,60 @@ export async function checkProfileCache(username: string, env: Env): Promise<{da
       error: error.message 
     });
     return null;
+  }
+}
+
+export class ScraperErrorHandler {
+  static transformError(error: any, username: string): Error {
+    if (error.message.includes('not found') || error.message.includes('404')) {
+      return new Error('Instagram profile not found');
+    }
+    if (error.message.includes('private') || error.message.includes('403')) {
+      return new Error('This Instagram profile is private');
+    }
+    if (error.message.includes('rate limit') || error.message.includes('429')) {
+      return new Error('Instagram is temporarily limiting requests. Please try again in a few minutes.');
+    }
+    if (error.message.includes('timeout')) {
+      return new Error('Profile scraping timed out. Please try again.');
+    }
+    return new Error('Failed to retrieve profile data');
+  }
+
+  static shouldRetryError(error: any): boolean {
+    return !error.message.includes('not found') && !error.message.includes('private');
+  }
+}
+
+export async function withScraperRetry<T>(
+  attempts: Array<() => Promise<T>>,
+  username: string
+): Promise<T> {
+  let lastError: Error | null = null;
+
+  for (const attempt of attempts) {
+    try {
+      return await attempt();
+    } catch (error: any) {
+      logger('warn', `Scraper attempt failed`, { username, error: error.message });
+      lastError = error;
+      
+      if (!ScraperErrorHandler.shouldRetryError(error)) {
+        throw ScraperErrorHandler.transformError(error, username);
+      }
+    }
+  }
+
+  throw ScraperErrorHandler.transformError(lastError!, username);
+}
+
+export function buildScraperUrl(endpoint: string, token: string): string {
+  const APIFY_BASE_URL = 'https://api.apify.com/v2/acts';
+  const APIFY_RUN_SYNC_ENDPOINT = '/run-sync-get-dataset-items';
+  
+  if (endpoint.includes('/')) {
+    return `${APIFY_BASE_URL}/${endpoint}${APIFY_RUN_SYNC_ENDPOINT}?token=${token}`;
+  } else {
+    return `${APIFY_BASE_URL}/${endpoint}${APIFY_RUN_SYNC_ENDPOINT}?token=${token}`;
   }
 }
