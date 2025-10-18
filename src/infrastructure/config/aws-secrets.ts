@@ -67,15 +67,15 @@ export class AWSSecretsManager {
         throw new Error(`AWS API error: ${response.status} - ${errorText}`);
       }
 
-      const data = await response.json();
-      
-      if (!data.SecretString) {
-        throw new Error('Secret has no string value');
-      }
+const data = await response.json() as any;
 
-      // Try to parse as structured JSON first
-      try {
-        const secretValue: SecretValue = JSON.parse(data.SecretString);
+if (!data.SecretString) {
+  throw new Error('Secret has no string value');
+}
+
+// Try to parse as structured JSON first
+try {
+  const secretValue: SecretValue = JSON.parse(data.SecretString);
 logger('info', 'Retrieved structured secret from AWS', { 
   secretPath,
   version: secretValue.version,
@@ -222,8 +222,8 @@ return secretValue.apiKey;
         throw new Error(`AWS API error: ${response.status}`);
       }
 
-      const data = await response.json();
-      const secretNames = data.SecretList?.map((secret: any) => secret.Name) || [];
+const data = await response.json() as any;
+const secretNames = data.SecretList?.map((secret: any) => secret.Name) || [];
       
       logger('info', 'Listed secrets from AWS', { 
         count: secretNames.length,
