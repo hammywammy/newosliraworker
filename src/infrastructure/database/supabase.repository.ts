@@ -106,8 +106,8 @@ const cleanLeadData = {
       throw new Error(`Failed to upsert lead: ${leadResponse.status} - ${errorText}`);
     }
 
-    const leadResult = await leadResponse.json();
-    if (!leadResult || !leadResult.length) {
+    const leadResult = await leadResponse.json() as any[]; // ✅ FIX
+    if (!Array.isArray(leadResult) || leadResult.length === 0) { // ✅ FIX
       throw new Error('Failed to create/update lead record - no data returned');
     }
 
@@ -216,8 +216,8 @@ summary_text: (() => {
       throw new Error(`Failed to insert run: ${runResponse.status} - ${errorText}`);
     }
 
-    const runResult = await runResponse.json();
-    if (!runResult || !runResult.length) {
+    const runResult = await runResponse.json() as any[]; // ✅ FIX
+    if (!Array.isArray(runResult) || runResult.length === 0) { // ✅ FIX
       throw new Error('Failed to create run record - no data returned');
     }
 
@@ -317,8 +317,8 @@ case 'xray':
       throw new Error(`Failed to insert payload: ${payloadResponse.status} - ${errorText}`);
     }
 
-    const payloadResult = await payloadResponse.json();
-    if (!payloadResult || !payloadResult.length) {
+    const payloadResult = await payloadResponse.json() as any[]; // ✅ FIX
+    if (!Array.isArray(payloadResult) || payloadResult.length === 0) { // ✅ FIX
       throw new Error('Failed to create payload record - no data returned');
     }
 
@@ -490,8 +490,8 @@ export async function getAnalysisDetails(
       throw new Error(`Analysis details query failed: ${response.status}`);
     }
 
-    const results = await response.json();
-    if (!results.length) {
+    const results = await response.json() as any[]; // ✅ FIX
+    if (!Array.isArray(results) || results.length === 0) { // ✅ FIX
       throw new Error('Analysis not found or access denied');
     }
 
@@ -539,8 +539,8 @@ export async function updateCreditsAndTransaction(
       throw new Error(`Failed to fetch subscription: ${subscriptionResponse.status}`);
     }
 
-    const subscriptions = await subscriptionResponse.json();
-    if (!subscriptions.length) {
+    const subscriptions = await subscriptionResponse.json() as any[]; // ✅ FIX
+    if (!Array.isArray(subscriptions) || subscriptions.length === 0) { // ✅ FIX
       throw new Error('No active subscription found');
     }
 
@@ -619,8 +619,8 @@ export async function fetchUserAndCredits(user_id: string, env: Env): Promise<an
       throw new Error(`Subscription fetch failed: ${response.status}`);
     }
 
-    const subscriptions = await response.json();
-    if (!subscriptions.length) {
+    const subscriptions = await response.json() as any[]; // ✅ FIX
+    if (!Array.isArray(subscriptions) || subscriptions.length === 0) { // ✅ FIX
       return { isValid: false, error: 'No active subscription found' };
     }
 
@@ -650,8 +650,8 @@ export async function fetchBusinessProfile(business_id: string, user_id: string,
       throw new Error(`Business profile fetch failed: ${response.status}`);
     }
 
-    const profiles = await response.json();
-    if (!profiles.length) {
+    const profiles = await response.json() as any[]; // ✅ FIX
+    if (!Array.isArray(profiles) || profiles.length === 0) { // ✅ FIX
       throw new Error('Business profile not found or access denied');
     }
 
@@ -677,8 +677,8 @@ export async function getLeadIdFromRun(run_id: string, env: Env): Promise<string
       throw new Error(`Failed to fetch run: ${response.status}`);
     }
 
-    const runs = await response.json();
-    if (!runs.length) {
+    const runs = await response.json() as any[]; // ✅ FIX
+    if (!Array.isArray(runs) || runs.length === 0) { // ✅ FIX
       throw new Error('Run not found');
     }
 
