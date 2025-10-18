@@ -4,6 +4,9 @@ import { generateRequestId, logger } from '@/shared/utils/logger.util.js';
 import { createStandardResponse } from '@/shared/utils/response.util.js';
 import { normalizeRequest } from '@/shared/utils/validation.util.js';
 import { saveCompleteAnalysis, updateCreditsAndTransaction, fetchUserAndCredits, fetchBusinessProfile, getLeadIdFromRun } from '@/infrastructure/database/supabase.repository.js';
+import { scrapeInstagramProfile } from '@/domain/scraping/instagram-scraper.service.js';
+import { preScreenProfile } from '@/domain/ai/prompts.js';
+import { DirectAnalysisExecutor } from '@/domain/analysis/direct-analysis.service.js';
 
 export async function handleAnalyze(c: Context<{ Bindings: Env }>): Promise<Response> {
   const requestId = generateRequestId();
@@ -38,9 +41,8 @@ export async function handleAnalyze(c: Context<{ Bindings: Env }>): Promise<Resp
 
     // Scrape profile with error handling
     let profileData: ProfileData;
-    try {
-      const { scrapeInstagramProfile } = await import('../services/instagram-scraper.js');
-      profileData = await scrapeInstagramProfile(username, analysis_type, c.env);
+try {
+  profileData = await scrapeInstagramProfile(username, analysis_type, c.env);
       
       if (!profileData.username) {
         throw new Error('Profile scraping failed - no username returned');
@@ -59,7 +61,6 @@ export async function handleAnalyze(c: Context<{ Bindings: Env }>): Promise<Resp
   // If profile not found, charge 1 token before returning error
   if (scrapeError.message.includes('not found') || scrapeError.message.includes('does not exist')) {
     try {
-      const { updateCreditsAndTransaction } = await import('../services/database.js');
       
       // Charge 1 token for failed lookup
       const failedRunId = 'failed-' + requestId;
@@ -102,7 +103,6 @@ export async function handleAnalyze(c: Context<{ Bindings: Env }>): Promise<Resp
 
     // Pre-screen for light analysis (early exit optimization)
     if (analysis_type === 'light') {
-      const { preScreenProfile } = await import('../services/prompts.js');
       const preScreen = preScreenProfile(profileData, business);
       
       if (!preScreen.shouldProcess) {
@@ -153,7 +153,6 @@ let processingTime;
 try {
   logger('info', 'Executing direct analysis', { analysis_type, requestId });
 
-  const { DirectAnalysisExecutor } = await import('../services/direct-analysis.js');
   const directExecutor = new DirectAnalysisExecutor(c.env, requestId);
   
   let directResult;
