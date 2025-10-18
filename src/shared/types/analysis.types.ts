@@ -102,17 +102,24 @@ export interface AnalysisResponse {
     commercial_intelligence?: any;
     persuasion_strategy?: any;
   };
-  credits: {
-    used: number;
-    remaining: number;
-    actual_cost?: number; // ← ADDED: actual cost tracking
+credits: {
+  used: number;
+  remaining: number;
+  actual_cost?: number;
+  margin?: number; // ← FIX: analyze.controller.ts:314
+};
+metadata: {
+  request_id: string;
+  analysis_completed_at: string;
+  schema_version: string;
+  system_used?: string;
+  performance?: { // ← FIX: analyze.controller.ts:321
+    processing_duration_ms: number;
+    model_used: string;
+    block_type: string;
+    tokens_processed: number;
   };
-  metadata: {
-    request_id: string;
-    analysis_completed_at: string;
-    schema_version: string;
-    system_used?: string; // ← ADDED: which system performed analysis
-  };
+};
 }
 
 export interface AnalysisResult {
