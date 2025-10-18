@@ -299,8 +299,7 @@ function validateApiKeyFormat(keyName: string, keyValue: string): { valid: boole
     'STRIPE_SECRET_KEY': (key) => (key.startsWith('sk_live_') || key.startsWith('sk_test_')) && key.length > 20,
     'STRIPE_WEBHOOK_SECRET': (key) => key.startsWith('whsec_') && key.length > 20,
     'STRIPE_PUBLISHABLE_KEY': (key) => (key.startsWith('pk_live_') || key.startsWith('pk_test_')) && key.length > 20,
-    'WORKER_URL': (key) => key.startsWith('https://') && key.includes('.workers.dev'),
-    'NETLIFY_BUILD_HOOK_URL': (key) => key.startsWith('https://api.netlify.com/build_hooks/')
+    'WORKER_URL': (key) => key.startsWith('https://') && key.includes('.workers.dev')
   };
   
   const validator = validations[keyName];
