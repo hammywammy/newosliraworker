@@ -1,15 +1,19 @@
 import type { Env } from '@/shared/types/index.js';
 import { fetchJson } from '@/shared/utils/helpers.util.js';
 import { logger } from '@/shared/utils/logger.util.js';
+import { getApiKey } from '@/infrastructure/config/config-manager.js';
 
 // ===============================================================================
 // ANALYTICS DASHBOARD SUMMARY
 // ===============================================================================
 
 export async function getAnalyticsSummary(env: Env): Promise<any> {
+  const supabaseUrl = await getApiKey('SUPABASE_URL', env, env.APP_ENV);
+  const serviceRole = await getApiKey('SUPABASE_SERVICE_ROLE', env, env.APP_ENV);
+  
   const headers = {
-    apikey: env.SUPABASE_SERVICE_ROLE,
-    Authorization: `Bearer ${env.SUPABASE_SERVICE_ROLE}`,
+    apikey: serviceRole,
+    Authorization: `Bearer ${serviceRole}`,
     'Content-Type': 'application/json'
   };
 
@@ -18,24 +22,24 @@ export async function getAnalyticsSummary(env: Env): Promise<any> {
     const [leadsWithRuns, payloadsData, usersResponse] = await Promise.all([
       // Get leads with their latest runs
       fetchJson<any[]>(
-        `${env.SUPABASE_URL}/rest/v1/leads?select=lead_id,username,follower_count,first_discovered_at,runs(run_id,analysis_type,overall_score,niche_fit_score,engagement_score,created_at)&order=runs.created_at.desc`,
+        `${supabaseUrl}/rest/v1/leads?select=lead_id,username,follower_count,first_discovered_at,runs(run_id,analysis_type,overall_score,niche_fit_score,engagement_score,created_at)&order=runs.created_at.desc`,
         { headers }
       ),
       // Get payload data for engagement analysis
       fetchJson<any[]>(
-        `${env.SUPABASE_URL}/rest/v1/payloads?select=analysis_data,created_at,analysis_type`,
+        `${supabaseUrl}/rest/v1/payloads?select=analysis_data,created_at,analysis_type`,
         { headers }
       ),
       // Get user data
       fetchJson<any[]>(
-        `${env.SUPABASE_URL}/rest/v1/users?select=id,created_at,subscription_status,credits`,
+        `${supabaseUrl}/rest/v1/users?select=id,created_at,subscription_status,credits`,
         { headers }
       )
     ]);
 
     // Flatten runs data for analysis
     const allRuns = leadsWithRuns.flatMap(lead => 
-      lead.runs?.map(run => ({
+      lead.runs?.map((run: any) => ({
         ...run,
         lead_id: lead.lead_id,
         username: lead.username,
@@ -50,45 +54,49 @@ export async function getAnalyticsSummary(env: Env): Promise<any> {
     
     // Core metrics based on runs (not leads)
     const totalAnalyses = allRuns.length;
-    const recentAnalyses = allRuns.filter(run => run.created_at > sevenDaysAgo).length;
-    const monthlyAnalyses = allRuns.filter(run => run.created_at > thirtyDaysAgo).length;
-    const uniqueLeads = new Set(allRuns.map(run => run.lead_id)).size;
+    const recentAnalyses = allRuns.filter((run: any) => run.created_at > sevenDaysAgo).length;
+    const monthlyAnalyses = allRuns.filter((run: any) => run.created_at > thirtyDaysAgo).length;
+    const uniqueLeads = new Set(allRuns.map((run: any) => run.lead_id)).size;
     
     // Score analysis from runs table
+    const scores = allRuns.map((run: any) => run.overall_score || 0);
+    const nicheFitScores = allRuns.map((run: any) => run.niche_fit_score || 0);
+    const engagementScores = allRuns.map((run: any) => run.engagement_score || 0);
+    
     const avgOverallScore = totalAnalyses > 0 ? 
-      Math.round(allRuns.reduce((sum, run) => sum + (run.overall_score || 0), 0) / totalAnalyses) : 0;
+      Math.round(allRuns.reduce((sum: number, run: any) => sum + (run.overall_score || 0), 0) / totalAnalyses) : 0;
     
     const avgNicheFitScore = totalAnalyses > 0 ? 
-      Math.round(allRuns.reduce((sum, run) => sum + (run.niche_fit_score || 0), 0) / totalAnalyses) : 0;
+      Math.round(allRuns.reduce((sum: number, run: any) => sum + (run.niche_fit_score || 0), 0) / totalAnalyses) : 0;
     
     const avgEngagementScore = totalAnalyses > 0 ? 
-      Math.round(allRuns.reduce((sum, run) => sum + (run.engagement_score || 0), 0) / totalAnalyses) : 0;
+      Math.round(allRuns.reduce((sum: number, run: any) => sum + (run.engagement_score || 0), 0) / totalAnalyses) : 0;
     
-    const highScoreAnalyses = allRuns.filter(run => (run.overall_score || 0) > 75).length;
+    const highScoreAnalyses = allRuns.filter((run: any) => (run.overall_score || 0) > 75).length;
     const conversionRate = totalAnalyses > 0 ? Math.round((highScoreAnalyses / totalAnalyses) * 100) : 0;
     
     // Engagement analysis from payloads
-    const deepPayloads = payloadsData.filter(p => p.analysis_type === 'deep');
+    const deepPayloads = payloadsData.filter((p: any) => p.analysis_type === 'deep');
     let avgEngagementRate = 0;
     if (deepPayloads.length > 0) {
       const engagementRates = deepPayloads
-        .map(p => p.analysis_data?.engagement_breakdown?.engagement_rate || 0)
-        .filter(rate => rate > 0);
+        .map((p: any) => p.analysis_data?.engagement_breakdown?.engagement_rate || 0)
+        .filter((rate: number) => rate > 0);
       avgEngagementRate = engagementRates.length > 0 ? 
-        Math.round(engagementRates.reduce((sum, rate) => sum + rate, 0) / engagementRates.length * 100) / 100 : 0;
+        Math.round(engagementRates.reduce((sum: number, rate: number) => sum + rate, 0) / engagementRates.length * 100) / 100 : 0;
     }
     
     // User metrics
-    const activeUsers = usersResponse.filter(user => user.subscription_status === 'active').length;
-    const totalCreditsAvailable = usersResponse.reduce((sum, user) => sum + (user.credits || 0), 0);
+    const activeUsers = usersResponse.filter((user: any) => user.subscription_status === 'active').length;
+    const totalCreditsAvailable = usersResponse.reduce((sum: number, user: any) => sum + (user.credits || 0), 0);
     
     // Analysis type breakdown
-    const lightAnalyses = allRuns.filter(run => run.analysis_type === 'light').length;
-    const deepAnalyses = allRuns.filter(run => run.analysis_type === 'deep').length;
-    const xrayAnalyses = allRuns.filter(run => run.analysis_type === 'xray').length;
+    const lightAnalyses = allRuns.filter((run: any) => run.analysis_type === 'light').length;
+    const deepAnalyses = allRuns.filter((run: any) => run.analysis_type === 'deep').length;
+    const xrayAnalyses = allRuns.filter((run: any) => run.analysis_type === 'xray').length;
     
     // Growth calculation
-    const previousWeekRuns = allRuns.filter(run => {
+    const previousWeekRuns = allRuns.filter((run: any) => {
       const runDate = new Date(run.created_at);
       const twoWeeksAgo = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
       return runDate > twoWeeksAgo && runDate <= new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
@@ -125,7 +133,7 @@ export async function getAnalyticsSummary(env: Env): Promise<any> {
         userGrowth: activeUsers > 0 ? "active" : "no_subscribers"
       },
       insights: {
-        topPerformingScore: Math.max(...allRuns.map(run => run.overall_score || 0)),
+        topPerformingScore: Math.max(...allRuns.map((run: any) => run.overall_score || 0)),
         mostActiveWeek: recentAnalyses > previousWeekRuns ? "current" : "previous",
         recommendedFocus: conversionRate < 20 ? "improve_lead_quality" : "scale_operations",
         engagementBenchmark: avgEngagementRate > 3 ? "exceeds_benchmark" : "below_benchmark"
@@ -162,9 +170,12 @@ export async function getEnhancedAnalytics(
   business_id: string,
   env: Env
 ): Promise<any> {
+  const supabaseUrl = await getApiKey('SUPABASE_URL', env, env.APP_ENV);
+  const serviceRole = await getApiKey('SUPABASE_SERVICE_ROLE', env, env.APP_ENV);
+  
   const headers = {
-    apikey: env.SUPABASE_SERVICE_ROLE,
-    Authorization: `Bearer ${env.SUPABASE_SERVICE_ROLE}`,
+    apikey: serviceRole,
+    Authorization: `Bearer ${serviceRole}`,
     'Content-Type': 'application/json'
   };
 
@@ -173,19 +184,19 @@ export async function getEnhancedAnalytics(
     const [userLeadsRuns, userPayloads] = await Promise.all([
       // User's leads with runs
       fetchJson<any[]>(
-        `${env.SUPABASE_URL}/rest/v1/leads?select=lead_id,username,display_name,follower_count,first_discovered_at,runs(run_id,analysis_type,overall_score,niche_fit_score,engagement_score,created_at)&user_id=eq.${user_id}&business_id=eq.${business_id}&order=runs.created_at.desc`,
+        `${supabaseUrl}/rest/v1/leads?select=lead_id,username,display_name,follower_count,first_discovered_at,runs(run_id,analysis_type,overall_score,niche_fit_score,engagement_score,created_at)&user_id=eq.${user_id}&business_id=eq.${business_id}&order=runs.created_at.desc`,
         { headers }
       ),
       // User's analysis payloads
       fetchJson<any[]>(
-        `${env.SUPABASE_URL}/rest/v1/payloads?select=analysis_data,analysis_type,created_at&user_id=eq.${user_id}&business_id=eq.${business_id}`,
+        `${supabaseUrl}/rest/v1/payloads?select=analysis_data,analysis_type,created_at&user_id=eq.${user_id}&business_id=eq.${business_id}`,
         { headers }
       )
     ]);
 
     // Flatten runs data
     const allRuns = userLeadsRuns.flatMap(lead => 
-      lead.runs?.map(run => ({
+      lead.runs?.map((run: any) => ({
         ...run,
         lead_id: lead.lead_id,
         username: lead.username,
@@ -206,42 +217,43 @@ export async function getEnhancedAnalytics(
     }
 
     // Calculate performance metrics
-    const avgOverallScore = Math.round(allRuns.reduce((sum, run) => sum + (run.overall_score || 0), 0) / totalAnalyses);
-    const avgNicheFitScore = Math.round(allRuns.reduce((sum, run) => sum + (run.niche_fit_score || 0), 0) / totalAnalyses);
-    const avgEngagementScore = Math.round(allRuns.reduce((sum, run) => sum + (run.engagement_score || 0), 0) / totalAnalyses);
+    const avgOverallScore = Math.round(allRuns.reduce((sum: number, run: any) => sum + (run.overall_score || 0), 0) / totalAnalyses);
+    const avgNicheFitScore = Math.round(allRuns.reduce((sum: number, run: any) => sum + (run.niche_fit_score || 0), 0) / totalAnalyses);
+    const avgEngagementScore = Math.round(allRuns.reduce((sum: number, run: any) => sum + (run.engagement_score || 0), 0) / totalAnalyses);
 
     // Recent performance (last 7 days)
     const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
-    const recentRuns = allRuns.filter(run => run.created_at > sevenDaysAgo);
+    const recentRuns = allRuns.filter((run: any) => run.created_at > sevenDaysAgo);
     const recentAvgScore = recentRuns.length > 0 ?
-      Math.round(recentRuns.reduce((sum, run) => sum + (run.overall_score || 0), 0) / recentRuns.length) : avgOverallScore;
+      Math.round(recentRuns.reduce((sum: number, run: any) => sum + (run.overall_score || 0), 0) / recentRuns.length) : avgOverallScore;
 
     // Engagement analysis from payloads
-    const deepPayloads = userPayloads.filter(p => p.analysis_type === 'deep');
+    const deepPayloads = userPayloads.filter((p: any) => p.analysis_type === 'deep');
     let avgEngagementRate = 0;
     if (deepPayloads.length > 0) {
       const engagementRates = deepPayloads
-        .map(p => p.analysis_data?.engagement_breakdown?.engagement_rate || 0)
-        .filter(rate => rate > 0);
+        .map((p: any) => p.analysis_data?.engagement_breakdown?.engagement_rate || 0)
+        .filter((rate: number) => rate > 0);
       avgEngagementRate = engagementRates.length > 0 ? 
-        Math.round(engagementRates.reduce((sum, rate) => sum + rate, 0) / engagementRates.length * 100) / 100 : 0;
+        Math.round(engagementRates.reduce((sum: number, rate: number) => sum + rate, 0) / engagementRates.length * 100) / 100 : 0;
     }
 
     // Performance segmentation
-    const highScoreProfiles = allRuns.filter(run => (run.overall_score || 0) > 75).length;
-    const mediumScoreProfiles = allRuns.filter(run => (run.overall_score || 0) >= 50 && (run.overall_score || 0) <= 75).length;
-    const lowScoreProfiles = allRuns.filter(run => (run.overall_score || 0) < 50).length;
+    const highScoreProfiles = allRuns.filter((run: any) => (run.overall_score || 0) > 75).length;
+    const mediumScoreProfiles = allRuns.filter((run: any) => (run.overall_score || 0) >= 50 && (run.overall_score || 0) <= 75).length;
+    const lowScoreProfiles = allRuns.filter((run: any) => (run.overall_score || 0) < 50).length;
 
     // Follower analysis
+    const followerCounts = userLeadsRuns.map(lead => lead.follower_count || 0);
     const avgFollowers = totalLeads > 0 ?
-      Math.round(userLeadsRuns.reduce((sum, lead) => sum + (lead.follower_count || 0), 0) / totalLeads) : 0;
-    const microInfluencers = userLeadsRuns.filter(lead => (lead.follower_count || 0) >= 1000 && (lead.follower_count || 0) <= 100000).length;
-    const macroInfluencers = userLeadsRuns.filter(lead => (lead.follower_count || 0) > 100000).length;
+      Math.round(userLeadsRuns.reduce((sum: number, lead: any) => sum + (lead.follower_count || 0), 0) / totalLeads) : 0;
+    const microInfluencers = followerCounts.filter((count: number) => count >= 1000 && count <= 100000).length;
+    const macroInfluencers = followerCounts.filter((count: number) => count > 100000).length;
 
     // Analysis type breakdown
-    const lightAnalyses = allRuns.filter(run => run.analysis_type === 'light').length;
-    const deepAnalyses = allRuns.filter(run => run.analysis_type === 'deep').length;
-    const xrayAnalyses = allRuns.filter(run => run.analysis_type === 'xray').length;
+    const lightAnalyses = allRuns.filter((run: any) => run.analysis_type === 'light').length;
+    const deepAnalyses = allRuns.filter((run: any) => run.analysis_type === 'deep').length;
+    const xrayAnalyses = allRuns.filter((run: any) => run.analysis_type === 'xray').length;
 
     // Success rate calculation
     const successRate = totalAnalyses > 0 ? Math.round((highScoreProfiles / totalAnalyses) * 100) : 0;
@@ -362,15 +374,18 @@ export async function getTopPerformers(
   env?: Env,
   limit: number = 10
 ): Promise<any> {
+  const supabaseUrl = await getApiKey('SUPABASE_URL', env!, env!.APP_ENV);
+  const serviceRole = await getApiKey('SUPABASE_SERVICE_ROLE', env!, env!.APP_ENV);
+  
   const headers = {
-    apikey: env!.SUPABASE_SERVICE_ROLE,
-    Authorization: `Bearer ${env!.SUPABASE_SERVICE_ROLE}`,
+    apikey: serviceRole,
+    Authorization: `Bearer ${serviceRole}`,
     'Content-Type': 'application/json'
   };
 
   try {
     // Build query for top performers using new structure
-    let query = `${env!.SUPABASE_URL}/rest/v1/runs?select=run_id,overall_score,niche_fit_score,engagement_score,analysis_type,created_at,leads(username,display_name,follower_count,profile_picture_url)&order=overall_score.desc&limit=${limit}`;
+    let query = `${supabaseUrl}/rest/v1/runs?select=run_id,overall_score,niche_fit_score,engagement_score,analysis_type,created_at,leads(username,display_name,follower_count,profile_picture_url)&order=overall_score.desc&limit=${limit}`;
     
     if (user_id && business_id) {
       query += `&user_id=eq.${user_id}&business_id=eq.${business_id}`;
@@ -378,7 +393,7 @@ export async function getTopPerformers(
 
     const response = await fetchJson<any[]>(query, { headers });
 
-    const topPerformers = response.map((run, index) => ({
+    const topPerformers = response.map((run: any, index: number) => ({
       rank: index + 1,
       run_id: run.run_id,
       username: run.leads?.username || 'Unknown',
@@ -398,7 +413,7 @@ export async function getTopPerformers(
       metrics: {
         highest_score: topPerformers[0]?.overall_score || 0,
         average_top_score: topPerformers.length > 0 ? 
-          Math.round(topPerformers.reduce((sum, p) => sum + p.overall_score, 0) / topPerformers.length) : 0,
+          Math.round(topPerformers.reduce((sum: number, p: any) => sum + p.overall_score, 0) / topPerformers.length) : 0,
         total_analyzed: response.length
       }
     };
@@ -424,18 +439,21 @@ export async function getRecentActivity(
   env: Env,
   limit: number = 20
 ): Promise<any> {
+  const supabaseUrl = await getApiKey('SUPABASE_URL', env, env.APP_ENV);
+  const serviceRole = await getApiKey('SUPABASE_SERVICE_ROLE', env, env.APP_ENV);
+  
   const headers = {
-    apikey: env.SUPABASE_SERVICE_ROLE,
-    Authorization: `Bearer ${env.SUPABASE_SERVICE_ROLE}`,
+    apikey: serviceRole,
+    Authorization: `Bearer ${serviceRole}`,
     'Content-Type': 'application/json'
   };
 
   try {
-    const query = `${env.SUPABASE_URL}/rest/v1/runs?select=run_id,analysis_type,overall_score,summary_text,created_at,leads(username,display_name,profile_picture_url,follower_count)&user_id=eq.${user_id}&business_id=eq.${business_id}&order=created_at.desc&limit=${limit}`;
+    const query = `${supabaseUrl}/rest/v1/runs?select=run_id,analysis_type,overall_score,summary_text,created_at,leads(username,display_name,profile_picture_url,follower_count)&user_id=eq.${user_id}&business_id=eq.${business_id}&order=created_at.desc&limit=${limit}`;
 
     const response = await fetchJson<any[]>(query, { headers });
 
-    const activities = response.map(run => ({
+    const activities = response.map((run: any) => ({
       run_id: run.run_id,
       type: 'analysis_completed',
       analysis_type: run.analysis_type,
@@ -497,16 +515,19 @@ export async function getBusinessIntelligence(
   business_id: string,
   env: Env
 ): Promise<any> {
+  const supabaseUrl = await getApiKey('SUPABASE_URL', env, env.APP_ENV);
+  const serviceRole = await getApiKey('SUPABASE_SERVICE_ROLE', env, env.APP_ENV);
+  
   const headers = {
-    apikey: env.SUPABASE_SERVICE_ROLE,
-    Authorization: `Bearer ${env.SUPABASE_SERVICE_ROLE}`,
+    apikey: serviceRole,
+    Authorization: `Bearer ${serviceRole}`,
     'Content-Type': 'application/json'
   };
 
   try {
     // Get all user's runs with lead data for comprehensive analysis
     const allData = await fetchJson<any[]>(
-      `${env.SUPABASE_URL}/rest/v1/runs?select=*,leads(*),payloads(analysis_data)&user_id=eq.${user_id}&business_id=eq.${business_id}&order=created_at.desc`,
+      `${supabaseUrl}/rest/v1/runs?select=*,leads(*),payloads(analysis_data)&user_id=eq.${user_id}&business_id=eq.${business_id}&order=created_at.desc`,
       { headers }
     );
 
@@ -521,13 +542,13 @@ export async function getBusinessIntelligence(
     }
 
     // Time-based performance analysis
-    const last30Days = allData.filter(run => {
+    const last30Days = allData.filter((run: any) => {
       const runDate = new Date(run.created_at);
       const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
       return runDate > thirtyDaysAgo;
     });
 
-    const last7Days = allData.filter(run => {
+    const last7Days = allData.filter((run: any) => {
       const runDate = new Date(run.created_at);
       const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
       return runDate > sevenDaysAgo;
@@ -535,21 +556,26 @@ export async function getBusinessIntelligence(
 
     // Performance trends
     const monthlyAvgScore = last30Days.length > 0 ? 
-      Math.round(last30Days.reduce((sum, run) => sum + (run.overall_score || 0), 0) / last30Days.length) : 0;
+      Math.round(last30Days.reduce((sum: number, run: any) => sum + (run.overall_score || 0), 0) / last30Days.length) : 0;
     
     const weeklyAvgScore = last7Days.length > 0 ? 
-      Math.round(last7Days.reduce((sum, run) => sum + (run.overall_score || 0), 0) / last7Days.length) : 0;
+      Math.round(last7Days.reduce((sum: number, run: any) => sum + (run.overall_score || 0), 0) / last7Days.length) : 0;
 
     // Industry benchmarking (based on follower counts and engagement)
-    const microInfluencerRuns = allData.filter(run => 
+    const microInfluencerRuns = allData.filter((run: any) => 
       run.leads?.follower_count >= 1000 && run.leads?.follower_count <= 100000
     );
-    const macroInfluencerRuns = allData.filter(run => 
+    const macroInfluencerRuns = allData.filter((run: any) => 
       run.leads?.follower_count > 100000
     );
 
+    const microAvgScore = microInfluencerRuns.length > 0 ? 
+      Math.round(microInfluencerRuns.reduce((sum: number, run: any) => sum + run.overall_score, 0) / microInfluencerRuns.length) : 0;
+    const macroAvgScore = macroInfluencerRuns.length > 0 ? 
+      Math.round(macroInfluencerRuns.reduce((sum: number, run: any) => sum + run.overall_score, 0) / macroInfluencerRuns.length) : 0;
+
     // Quality scoring
-    const highQualityRuns = allData.filter(run => run.overall_score > 80);
+    const highQualityRuns = allData.filter((run: any) => run.overall_score > 80);
     const qualityRate = Math.round((highQualityRuns.length / allData.length) * 100);
 
     return {
@@ -563,10 +589,8 @@ export async function getBusinessIntelligence(
           trend: weeklyAvgScore > monthlyAvgScore ? "improving" : "declining"
         },
         audience_insights: {
-          micro_influencer_performance: microInfluencerRuns.length > 0 ? 
-            Math.round(microInfluencerRuns.reduce((sum, run) => sum + run.overall_score, 0) / microInfluencerRuns.length) : 0,
-          macro_influencer_performance: macroInfluencerRuns.length > 0 ? 
-            Math.round(macroInfluencerRuns.reduce((sum, run) => sum + run.overall_score, 0) / macroInfluencerRuns.length) : 0,
+          micro_influencer_performance: microAvgScore,
+          macro_influencer_performance: macroAvgScore,
           recommended_segment: microInfluencerRuns.length > macroInfluencerRuns.length ? "micro_influencers" : "macro_influencers"
         },
         strategic_recommendations: generateStrategicRecommendations(allData, qualityRate, weeklyAvgScore, monthlyAvgScore)
@@ -602,8 +626,8 @@ function generateStrategicRecommendations(data: any[], qualityRate: number, week
     recommendations.push("Performance improving - continue current targeting approach");
   }
 
-  const deepAnalyses = data.filter(run => run.analysis_type === 'deep').length;
-  const lightAnalyses = data.filter(run => run.analysis_type === 'light').length;
+  const deepAnalyses = data.filter((run: any) => run.analysis_type === 'deep').length;
+  const lightAnalyses = data.filter((run: any) => run.analysis_type === 'light').length;
   
   if (deepAnalyses < lightAnalyses * 0.3) {
     recommendations.push("Increase deep analysis ratio for better outreach personalization");
