@@ -191,7 +191,7 @@ Focus on general appeal, authenticity, and business partnership potential.`;
       throw new Error(`OpenAI API error: ${response.status} - ${errorText}`);
     }
 
-    const data = await response.json();
+        const data = await response.json() as any; // ✅ FIX: Add type assertion
     
     logger('info', 'OpenAI data parsed', {
       username: profileData.username,
@@ -395,10 +395,9 @@ export async function handleAnonymousAnalyze(c: Context<{ Bindings: Env }>): Pro
       
       return c.json(createStandardResponse(
         false,
-        undefined,
+        { remaining: 0, resetIn: rateLimit.resetIn }, // ✅ FIX: Move to data field
         `Daily limit reached. Reset in ${rateLimit.resetIn} hours.`,
-        requestId,
-        { remaining: 0, resetIn: rateLimit.resetIn }
+        requestId
       ), 429);
     }
     
@@ -434,10 +433,12 @@ export async function handleAnonymousAnalyze(c: Context<{ Bindings: Env }>): Pro
         
         return c.json(createStandardResponse(
           true,
-          cachedData,
+          { 
+            ...cachedData, // ✅ FIX: Merge metadata into data
+            _metadata: { remaining: rateLimit.remaining, cached: true }
+          },
           'Analysis complete (cached)',
-          requestId,
-          { remaining: rateLimit.remaining, cached: true }
+          requestId
         ));
       }
     } catch (cacheError: any) {
@@ -473,10 +474,12 @@ export async function handleAnonymousAnalyze(c: Context<{ Bindings: Env }>): Pro
     
     return c.json(createStandardResponse(
       true,
-      analysisResult,
+      { 
+        ...analysisResult, // ✅ FIX: Merge metadata into data
+        _metadata: { remaining: rateLimit.remaining, cached: false }
+      },
       'Analysis complete',
-      requestId,
-      { remaining: rateLimit.remaining, cached: false }
+      requestId
     ));
     
   } catch (error: any) {
