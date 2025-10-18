@@ -398,7 +398,7 @@ async function testOpenAIKey(apiKey: string): Promise<{ success: boolean; messag
     });
 
     if (response.ok) {
-      const data = await response.json();
+      const data = await response.json() as any; // ✅ FIX: Add type assertion
       return {
         success: true,
         message: 'OpenAI API key is valid and active',
@@ -466,7 +466,7 @@ async function testApifyKey(apiToken: string): Promise<{ success: boolean; messa
     const response = await fetch(`https://api.apify.com/v2/users/me?token=${apiToken}`);
 
     if (response.ok) {
-      const data = await response.json();
+      const data = await response.json() as any; // ✅ FIX: Add type assertion
       return {
         success: true,
         message: 'Apify API token is valid and active',
@@ -500,7 +500,7 @@ async function testStripeKey(secretKey: string): Promise<{ success: boolean; mes
     });
 
     if (response.ok) {
-      const data = await response.json();
+      const data = await response.json() as any; // ✅ FIX: Add type assertion
       return {
         success: true,
         message: 'Stripe secret key is valid and active',
