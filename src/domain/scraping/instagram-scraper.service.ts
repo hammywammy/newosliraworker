@@ -237,15 +237,15 @@ async function scrapeWithConfigs(
         });
         // CRITICAL: Pass posts to light profile for caching
         profileData = buildLightProfile(transformedData, posts, config.name);
-      } else {
-        logger('info', '🔬 BUILDING ENHANCED PROFILE', {
-          username: transformedData.username,
-          analysisType,
-          postsToProcess: posts.length,
-          hasRawData: !!rawData
-        });
-        profileData = buildEnhancedProfile(transformedData, posts, rawData, config.name, analysisType);
-      }
+} else {
+  logger('info', '🔬 BUILDING ENHANCED PROFILE', {
+    username: transformedData.username,
+    analysisType,
+    postsToProcess: posts.length,
+    hasRawData: !!rawData
+  });
+  profileData = await buildEnhancedProfile(transformedData, posts, rawData, config.name, analysisType);
+}
 
       logger('info', '✅ PROFILE BUILD COMPLETE', {
         username: profileData.username,
@@ -306,13 +306,13 @@ function buildLightProfile(data: any, posts: any[], scraperUsed: string): Profil
   return profile;
 }
 
-function buildEnhancedProfile(
+async function buildEnhancedProfile(
   data: any, 
   posts: any[],
   rawData: any,
   scraperUsed: string, 
   analysisType: AnalysisType
-): ProfileData {
+): Promise<ProfileData> {
   logger('info', '🏗️ BUILD ENHANCED PROFILE START', {
     username: data.username,
     analysisType,
@@ -576,12 +576,13 @@ function determineDataQuality(profile: ProfileData, analysisType: AnalysisType):
   if (profile.bio && profile.bio.length > 10) score += 15;
   if (profile.externalUrl) score += 10;
   
-  // Posts and engagement scoring
-  const postsCount = profile.latestPosts?.length || 0;
-  if (postsCount >= 5) score += 20;
-  else if (postsCount >= 2) score += 10;
-  
-  if (profile.engagement?.postsAnalyzed && profile.engagement.postsAnalyzed > 0) score += 15;
+// Posts and engagement scoring
+const postsCount = profile.latestPosts?.length || 0;
+if (postsCount >= 5) score += 20;
+else if (postsCount >= 2) score += 10;
+
+// ✅ FIX: Add explicit null check
+if (profile.engagement?.postsAnalyzed && profile.engagement.postsAnalyzed > 0) score += 15;
   
   // Analysis type requirements
   if (analysisType === 'light' && score >= 40) return 'high';
