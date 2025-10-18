@@ -34,6 +34,8 @@ async function getSupabaseServiceRole(env: Env): Promise<string> {
 // ===============================================================================
 
 interface BusinessProfileData {
+  [key: string]: any; // ✅ FIX: Add index signature for dynamic access
+  
   // Core business info (required)
   business_name: string;
   business_niche: string;
@@ -73,7 +75,7 @@ export async function handleBusinessProfiles(c: Context<{ Bindings: Env }>): Pro
   const url = new URL(c.req.url);
   const pathSegments = url.pathname.split('/').filter(Boolean);
   
-  try {
+ try {
     // Authenticate user
     const authResult = await authenticateRequest(c, requestId);
     if (!authResult.success) {
@@ -81,6 +83,11 @@ export async function handleBusinessProfiles(c: Context<{ Bindings: Env }>): Pro
     }
     
     const { userId } = authResult;
+    
+    // ✅ FIX: Add null check for userId
+    if (!userId) {
+      return c.json(createStandardResponse(false, undefined, 'User ID not found', requestId), 401);
+    }
     
     // Route to appropriate handler
     switch (method) {
@@ -146,7 +153,7 @@ async function handleListProfiles(
       throw new Error(`Database query failed: ${response.status}`);
     }
     
-    const profiles = await response.json();
+    const profiles = await response.json() as any[]; // ✅ FIX: Add type assertion
     
     logger('info', 'Profiles fetched successfully', { 
       userId, 
@@ -181,9 +188,9 @@ async function handleGetProfile(
       throw new Error(`Database query failed: ${response.status}`);
     }
     
-    const profiles = await response.json();
+    const profiles = await response.json() as any[]; // ✅ FIX: Add type assertion
     
-    if (!profiles || profiles.length === 0) {
+    if (!Array.isArray(profiles) || profiles.length === 0) { // ✅ FIX: Add Array.isArray check
       return c.json(createStandardResponse(false, undefined, 'Profile not found', requestId), 404);
     }
     
@@ -240,9 +247,9 @@ async function handleCreateProfile(
       throw new Error(`Database insert failed: ${response.status} - ${errorText}`);
     }
     
-    const result = await response.json();
+    const result = await response.json() as any[]; // ✅ FIX: Add type assertion
     
-    if (!result || !result.length) {
+    if (!Array.isArray(result) || result.length === 0) { // ✅ FIX: Add Array.isArray check
       throw new Error('Profile creation failed - no data returned');
     }
     
@@ -320,9 +327,9 @@ async function handleUpdateProfile(
       throw new Error(`Database update failed: ${response.status} - ${errorText}`);
     }
     
-    const result = await response.json();
+    const result = await response.json() as any[]; // ✅ FIX: Add type assertion
     
-    if (!result || !result.length) {
+    if (!Array.isArray(result) || result.length === 0) { // ✅ FIX: Add Array.isArray check
       return c.json(createStandardResponse(false, undefined, 'Profile not found or access denied', requestId), 404);
     }
     
@@ -382,9 +389,9 @@ async function handleDeleteProfile(
       throw new Error(`Database update failed: ${response.status} - ${errorText}`);
     }
     
-    const result = await response.json();
+    const result = await response.json() as any[]; // ✅ FIX: Add type assertion
     
-    if (!result || !result.length) {
+    if (!Array.isArray(result) || result.length === 0) { // ✅ FIX: Add Array.isArray check
       return c.json(createStandardResponse(false, undefined, 'Profile not found or access denied', requestId), 404);
     }
     
