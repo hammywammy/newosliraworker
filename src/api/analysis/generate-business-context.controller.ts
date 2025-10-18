@@ -4,6 +4,7 @@ import type { Env } from '@/shared/types/index.js';
 import { generateRequestId, logger } from '@/shared/utils/logger.util.js';
 import { createStandardResponse } from '@/shared/utils/response.util.js';
 import { extractUserFromJWT } from '@/shared/utils/auth.util.js';
+import { UniversalAIAdapter } from '@/domain/ai/universal-adapter.service.js';
 
 export async function handleGenerateBusinessContext(c: Context<{ Bindings: Env }>): Promise<Response> {
   const requestId = generateRequestId();
@@ -33,7 +34,7 @@ export async function handleGenerateBusinessContext(c: Context<{ Bindings: Env }
     });
 
     // Use GPT-5 Mini for context generation (economy tier)
-    const modelName = selectModel('context', 'economy');
+    const modelName = 'gpt-5-mini';
     const aiAdapter = new UniversalAIAdapter(c.env, requestId);
     
     const prompt = buildBusinessContextPrompt(business_data);
