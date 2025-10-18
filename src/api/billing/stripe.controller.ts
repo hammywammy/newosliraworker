@@ -68,7 +68,7 @@ export async function handleStripeWebhook(c: Context): Promise<Response> {
           }
         );
         
-        const subscription = await subResponse.json();
+        const subscription = await subResponse.json() as any; // ✅ FIX: Add type assertion
         const priceId = subscription.items.data[0].price.id;
         const planType = STRIPE_PRICE_TO_PLAN[priceId] || 'free';
 
@@ -111,8 +111,8 @@ export async function handleStripeWebhook(c: Context): Promise<Response> {
             { headers }
           );
           
-          const currentSubs = await currentSubResponse.json();
-          if (!currentSubs || currentSubs.length === 0) {
+          const currentSubs = await currentSubResponse.json() as any[]; // ✅ FIX: Add type assertion
+          if (!Array.isArray(currentSubs) || currentSubs.length === 0) {  // ✅ FIX: Use Array.isArray check
             logger('warn', 'Subscription not found for renewal', { subscriptionId, requestId });
             break;
           }
@@ -132,7 +132,7 @@ export async function handleStripeWebhook(c: Context): Promise<Response> {
             }
           );
           
-          const subscription = await subResponse.json();
+          const subscription = await subResponse.json() as any; // ✅ FIX: Add type assertion
 
           // Update subscription with rollover credits and new period
           await fetch(
@@ -283,7 +283,7 @@ export async function handleCreateCheckoutSession(c: Context): Promise<Response>
       throw new Error(`Stripe API error: ${errorText}`);
     }
 
-    const session = await stripeResponse.json();
+    const session = await stripeResponse.json() as any; // ✅ FIX: Add type assertion
     
     return c.json(createStandardResponse(true, { 
       sessionId: session.id, 
@@ -337,7 +337,7 @@ export async function handleCreatePortalSession(c: Context): Promise<Response> {
       throw new Error(`Stripe API error: ${errorText}`);
     }
 
-    const session = await stripeResponse.json();
+    const session = await stripeResponse.json() as any; // ✅ FIX: Add type assertion
     
     return c.json(createStandardResponse(true, { url: session.url }, undefined, requestId));
     
