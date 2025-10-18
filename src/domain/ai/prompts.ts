@@ -538,7 +538,7 @@ export function buildTriagePrompt(snapshot: any, businessOneLiner: string): stri
 ${snapshot.verified ? '✓' : ''}${snapshot.private ? 'Private' : 'Public'} | "${snapshot.bio_short || 'No bio'}"
 Links: ${snapshot.external_domains.join(',') || 'None'}
 Posts: ~${snapshot.posts_30d} recent
-Content: ${snapshot.top_captions.slice(0, 2).map(cap => `"${cap.slice(0, 30)}"`).join(' | ') || 'None'}
+Content: ${snapshot.top_captions.slice(0, 2).map((cap: string) => `"${cap.slice(0, 30)}"`).join(' | ') || 'None'}
 Engagement: ${snapshot.engagement_signals ? `${snapshot.engagement_signals.avg_likes} likes avg` : 'Unknown'}
 
 Score lead_score (0-100), data_richness (0-100), confidence (0-1), early_exit (bool), focus_points (2-4 items).
@@ -632,7 +632,7 @@ export function buildPersonalityAnalysisPrompt(profile: ProfileData): string {
   if (hasPreProcessed) {
     contentSample = (profile as any).preProcessed.summary;
   } else if (profile.latestPosts && profile.latestPosts.length > 0) {
-    contentSample = profile.latestPosts.slice(0, 6).map((p, i) => 
+    contentSample = profile.latestPosts.slice(0, 6).map((p: any, i: number) => 
       `${i+1}. "${p.caption?.slice(0, 100)}..." (${p.likesCount}♡)`
     ).join('\n');
   }
