@@ -163,7 +163,7 @@ function buildEnhancedProfile(profileData: any): any {
   }
 
   // Process posts
-  const processedPosts: PostData[] = posts.slice(0, 12).map(post => ({
+  const processedPosts: PostData[] = posts.slice(0, 12).map((post: any) => ({
     id: post.id || post.shortCode || post.code || post.pk || '',
     shortCode: post.shortCode || post.code || post.pk || '',
     caption: post.caption || post.edge_media_to_caption?.edges?.[0]?.node?.text || '',
