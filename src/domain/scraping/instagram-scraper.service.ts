@@ -7,7 +7,6 @@ import { getApiKey } from '@/infrastructure/config/config-manager.js';
 import { getScraperConfigs, validateAndTransformScraperData, type ScraperConfig } from './scraper-configs.js';
 import { callWithRetry } from '@/shared/utils/helpers.util.js';
 import { extractUsername } from '@/shared/utils/validation.util.js';
-import { calculateRealEngagement } from '@/shared/utils/engagement.util.js';
 import { validateProfileData } from '@/shared/utils/validation.util.js';
 
 export async function scrapeInstagramProfile(username: string, analysisType: AnalysisType, env: Env): Promise<ProfileData> {
@@ -390,7 +389,7 @@ function buildEnhancedProfile(
   if ((analysisType === 'deep' || analysisType === 'xray') && profile.latestPosts.length > 0) {
     // Note: This will be loaded at runtime when needed
     // The require is intentionally left as-is for CommonJS compatibility
-    const { runPreProcessing } = require('@/domain/analysis/pre-processor.service.js');
+   const { runPreProcessing } = await import('@/domain/analysis/pre-processor.service.js');
     const preProcessed = runPreProcessing(profile);
     
     // Attach pre-processed data to profile
@@ -582,7 +581,7 @@ function determineDataQuality(profile: ProfileData, analysisType: AnalysisType):
   if (postsCount >= 5) score += 20;
   else if (postsCount >= 2) score += 10;
   
-  if (profile.engagement?.postsAnalyzed > 0) score += 15;
+  if (profile.engagement?.postsAnalyzed && profile.engagement.postsAnalyzed > 0) score += 15;
   
   // Analysis type requirements
   if (analysisType === 'light' && score >= 40) return 'high';
