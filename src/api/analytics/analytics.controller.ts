@@ -23,11 +23,16 @@ async function fetchJson<T = any>(url: string, options?: RequestInit): Promise<T
 // SHARED UTILITIES - REMOVE REDUNDANCY
 // ===============================================================================
 
-const createHeaders = (env: Env) => ({
-  apikey: env.SUPABASE_SERVICE_ROLE,
-  Authorization: `Bearer ${env.SUPABASE_SERVICE_ROLE}`,
-  'Content-Type': 'application/json'
-});
+const createHeaders = (env: Env): Record<string, string> => {
+  // ✅ FIX: Ensure serviceRole is always a string, fallback to empty string
+  const serviceRole = env.SUPABASE_SERVICE_ROLE || '';
+  
+  return {
+    apikey: serviceRole,
+    Authorization: `Bearer ${serviceRole}`,
+    'Content-Type': 'application/json'
+  };
+};
 
 const getTimeRanges = () => {
   const now = new Date();
