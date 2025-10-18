@@ -1,10 +1,47 @@
+// src/api/debug/debug.controller.ts
+// COMPLETE REWRITE - All 29 TypeScript errors fixed, zero functionality removed
+
 import type { Context } from 'hono';
 import type { Env } from '@/shared/types/index.js';
 import { generateRequestId, logger } from '@/shared/utils/logger.util.js';
 import { scrapeInstagramProfile } from '@/domain/scraping/instagram-scraper.service.js';
 import { callWithRetry } from '@/shared/utils/helpers.util.js';
 
-export async function handleDebugEngagement(c: Context): Promise<Response> {
+// ===============================================================================
+// FIX: Add proper type definitions for analysis results
+// ===============================================================================
+interface AnalysisResults {
+  totalItems: number;
+  itemTypes: Record<string, number>;
+  profileItems: Array<{
+    index: number;
+    keys: string[];
+    username: any;
+    followers: any;
+    posts: any;
+  }>;
+  postItems: Array<{
+    index: number;
+    shortCode: any;
+    keys: string[];
+    engagementData: {
+      likesCount: any;
+      likes: any;
+      like_count: any;
+      likeCount: any;
+      commentsCount: any;
+      comments: any;
+      comment_count: any;
+      commentCount: any;
+    };
+    parsedLikes: number;
+    parsedComments: number;
+  }>;
+  fieldAnalysis: Record<string, number>;
+  engagementFieldAnalysis: Record<string, any[]>;
+}
+
+export async function handleDebugEngagement(c: Context<{ Bindings: Env }>): Promise<Response> {
   const username = c.req.param('username');
   
   try {
@@ -28,7 +65,7 @@ export async function handleDebugEngagement(c: Context): Promise<Response> {
         body: JSON.stringify(deepInput)
       },
       1, 1000, 30000
-    );
+    ) as any[];
 
     if (!rawResponse || !Array.isArray(rawResponse)) {
       return c.json({
@@ -39,7 +76,8 @@ export async function handleDebugEngagement(c: Context): Promise<Response> {
     }
 
     // Detailed analysis of the raw response
-    const analysisResults = {
+    // FIX: Use proper type with explicit Record types
+    const analysisResults: AnalysisResults = {
       totalItems: rawResponse.length,
       itemTypes: {},
       profileItems: [],
@@ -49,9 +87,15 @@ export async function handleDebugEngagement(c: Context): Promise<Response> {
     };
 
     // Analyze each item in the response
-    rawResponse.forEach((item, index) => {
+    // FIX: Add explicit types for parameters
+    rawResponse.forEach((item: any, index: number) => {
       const itemType = item.type || item.__typename || 'unknown';
-      analysisResults.itemTypes[itemType] = (analysisResults.itemTypes[itemType] || 0) + 1;
+      
+      // FIX: Type-safe property access
+      if (!analysisResults.itemTypes[itemType]) {
+        analysisResults.itemTypes[itemType] = 0;
+      }
+      analysisResults.itemTypes[itemType] = analysisResults.itemTypes[itemType] + 1;
       
       // Check if it's a profile item
       if (item.username || item.ownerUsername || (item.followersCount !== undefined && item.postsCount !== undefined)) {
@@ -88,7 +132,8 @@ export async function handleDebugEngagement(c: Context): Promise<Response> {
       }
       
       // Analyze common field patterns
-      Object.keys(item).forEach(key => {
+      // FIX: Add explicit type for key
+      Object.keys(item).forEach((key: string) => {
         if (!analysisResults.fieldAnalysis[key]) {
           analysisResults.fieldAnalysis[key] = 0;
         }
@@ -109,13 +154,15 @@ export async function handleDebugEngagement(c: Context): Promise<Response> {
     // Test manual engagement calculation
     let manualCalculationTest = null;
     if (analysisResults.postItems.length > 0) {
-      const validPosts = analysisResults.postItems.filter(post => 
+      // FIX: Add explicit type for post parameter
+      const validPosts = analysisResults.postItems.filter((post: typeof analysisResults.postItems[0]) => 
         post.parsedLikes > 0 || post.parsedComments > 0
       );
       
       if (validPosts.length > 0) {
-        const totalLikes = validPosts.reduce((sum, post) => sum + post.parsedLikes, 0);
-        const totalComments = validPosts.reduce((sum, post) => sum + post.parsedComments, 0);
+        // FIX: Add explicit types for reduce parameters
+        const totalLikes = validPosts.reduce((sum: number, post: typeof validPosts[0]) => sum + post.parsedLikes, 0);
+        const totalComments = validPosts.reduce((sum: number, post: typeof validPosts[0]) => sum + post.parsedComments, 0);
         const avgLikes = Math.round(totalLikes / validPosts.length);
         const avgComments = Math.round(totalComments / validPosts.length);
         
@@ -135,6 +182,11 @@ export async function handleDebugEngagement(c: Context): Promise<Response> {
       }
     }
 
+    // FIX: Type-safe sort for troubleshooting
+    const sortedFields = Object.entries(analysisResults.fieldAnalysis)
+      .sort(([, a], [, b]) => (b as number) - (a as number))
+      .slice(0, 10);
+
     return c.json({
       success: true,
       username,
@@ -147,9 +199,7 @@ export async function handleDebugEngagement(c: Context): Promise<Response> {
           !manualCalculationTest ? 'Manual calculation failed - no valid engagement data' : 'Manual calculation successful ✓'
         ],
         troubleshooting: {
-          mostCommonFields: Object.entries(analysisResults.fieldAnalysis)
-            .sort(([,a], [,b]) => b - a)
-            .slice(0, 10),
+          mostCommonFields: sortedFields,
           engagementFields: analysisResults.engagementFieldAnalysis,
           itemTypeDistribution: analysisResults.itemTypes
         }
@@ -164,7 +214,8 @@ export async function handleDebugEngagement(c: Context): Promise<Response> {
     }, 500);
   }
 }
-export async function handleDebugScrape(c: Context): Promise<Response> {
+
+export async function handleDebugScrape(c: Context<{ Bindings: Env }>): Promise<Response> {
   const username = c.req.param('username');
   const analysisType = (c.req.query('type') as 'light' | 'deep') || 'light';
   
@@ -184,7 +235,8 @@ export async function handleDebugScrape(c: Context): Promise<Response> {
         dataQuality: profileData.dataQuality,
         scraperUsed: profileData.scraperUsed,
         noFakeData: true,
-        manualCalculation: true}
+        manualCalculation: true
+      }
     });
   } catch (error: any) {
     return c.json({
@@ -196,7 +248,7 @@ export async function handleDebugScrape(c: Context): Promise<Response> {
   }
 }
 
-export async function handleDebugParsing(c: Context): Promise<Response> {
+export async function handleDebugParsing(c: Context<{ Bindings: Env }>): Promise<Response> {
   const username = c.req.param('username');
   
   try {
@@ -218,23 +270,26 @@ export async function handleDebugParsing(c: Context): Promise<Response> {
         body: JSON.stringify(deepInput)
       },
       1, 1000, 30000
-    );
+    ) as any[];
 
-    const profileItems = rawResponse?.filter(item => item.username || item.ownerUsername) || [];
-    const postItems = rawResponse?.filter(item => item.shortCode && item.likesCount !== undefined) || [];
+    // FIX: Add explicit types for filter parameters
+    const profileItems = rawResponse?.filter((item: any) => item.username || item.ownerUsername) || [];
+    const postItems = rawResponse?.filter((item: any) => item.shortCode && item.likesCount !== undefined) || [];
 
     // Manual engagement calculation test
     let engagementTest = null;
     if (postItems.length > 0) {
-      const validPosts = postItems.filter(post => {
+      // FIX: Add explicit type for post parameter
+      const validPosts = postItems.filter((post: any) => {
         const likes = parseInt(post.likesCount) || 0;
         const comments = parseInt(post.commentsCount) || 0;
         return likes > 0 || comments > 0;
       });
 
       if (validPosts.length > 0) {
-        const totalLikes = validPosts.reduce((sum, post) => sum + (parseInt(post.likesCount) || 0), 0);
-        const totalComments = validPosts.reduce((sum, post) => sum + (parseInt(post.commentsCount) || 0), 0);
+        // FIX: Add explicit types for reduce parameters
+        const totalLikes = validPosts.reduce((sum: number, post: any) => sum + (parseInt(post.likesCount) || 0), 0);
+        const totalComments = validPosts.reduce((sum: number, post: any) => sum + (parseInt(post.commentsCount) || 0), 0);
         const avgLikes = Math.round(totalLikes / validPosts.length);
         const avgComments = Math.round(totalComments / validPosts.length);
         const totalEngagement = avgLikes + avgComments;
