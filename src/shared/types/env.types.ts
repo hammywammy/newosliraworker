@@ -75,7 +75,4 @@ export interface Env {
   
   /** Admin authentication token - Fetched from AWS */
   ADMIN_TOKEN?: string;
-  
-  /** Netlify build hook URL for config sync - Fetched from AWS */
-  NETLIFY_BUILD_HOOK_URL?: string;
 }
