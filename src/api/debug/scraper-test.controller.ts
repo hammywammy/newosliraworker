@@ -43,7 +43,7 @@ const rawResponse = await callWithRetry(
 
 logger('info', 'dS_basic scraper response received', { 
   username,
-  itemsReturned: rawResponse?.length || 0,
+  itemsReturned: (rawResponse as any[])?.length || 0,
   requestId 
 });
 
