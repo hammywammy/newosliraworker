@@ -654,3 +654,13 @@ function generateStrategicRecommendations(data: any[], qualityRate: number, week
 
   return recommendations.length > 0 ? recommendations : ["Continue current strategy - performance is on track"];
 }
+
+export async function handleAnalyticsSummary(c: Context): Promise<Response> {
+  // Implement or delegate to existing function
+  return handleAnalytics(c);
+}
+
+export async function handleGenerateInsights(c: Context): Promise<Response> {
+  // Implement or delegate to existing function
+  return handleAnalytics(c);
+}
