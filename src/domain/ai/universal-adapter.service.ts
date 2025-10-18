@@ -131,7 +131,8 @@ private async executeModelCall(config: ModelConfig, request: UniversalRequest): 
     case 'gpt5_responses':
       return await this.callGPT5Responses(config, request);
     case 'gpt_chat':
-      return await this.callGPTChat(config, request);
+      // ✅ FIX: gpt_chat uses same endpoint as gpt5_responses
+      return await this.callGPT5Responses(config, request);
     case 'claude_messages':
       return await this.callClaudeMessages(config, request);
     default:
@@ -213,14 +214,14 @@ const body = {
     throw new Error(`GPT-5 API error: ${response.status} - ${errorBody}`);
   }
 
-const data = await response.json();
+const data = await response.json() as any; // ✅ FIX: Add type assertion
 logger('info', '✅ GPT-5 Response Success', {
   has_choices: !!data.choices,
   choices_length: data.choices?.length,
   has_usage: !!data.usage,
   first_choice_content_length: data.choices?.[0]?.message?.content?.length,
   usage_tokens: data.usage,
-  full_response_structure: JSON.stringify(data, null, 2), // ✅ LOG FULL RESPONSE
+  full_response_structure: JSON.stringify(data, null, 2),
   requestId: this.requestId
 });
 
@@ -269,11 +270,11 @@ const body = {
       body: JSON.stringify(body)
     });
 
-    if (!response.ok) {
+ if (!response.ok) {
       throw new Error(`Claude API error: ${response.status}`);
     }
 
-    const data = await response.json();
+    const data = await response.json() as any; // ✅ FIX: Add type assertion
     const content = data.content?.[0]?.text || '';
     const usage = data.usage || {};
 
