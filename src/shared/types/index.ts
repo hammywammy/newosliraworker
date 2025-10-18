@@ -7,6 +7,5 @@ export * from './user.types';
 export * from './analytics.types';
 export * from './bulk.types';
 export * from './api.types';
-export * from './legacy.types';
 export * from './payload.types.js';  
 export * from './database.types.js'; 
