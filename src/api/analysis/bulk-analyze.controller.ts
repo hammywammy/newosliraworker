@@ -147,6 +147,9 @@ export async function handleBulkAnalyze(c: Context<{ Bindings: Env }>): Promise<
     //NEEDS PROPER IMPLEMENTATION
     // Group profiles by analysis type and process in batches
 const batchAnalyze = async (profiles: string[], analysisType: string, context: any) => {
+  // ✅ FIX: Instantiate aiAdapter in scope
+  const aiAdapter = new UniversalAIAdapter(context.env, context.requestId);
+  
   // For light analysis, batch multiple profiles in single AI call
   if (analysisType === 'light' && profiles.length > 1) {
     const batchSize = 5;
@@ -172,12 +175,13 @@ const batchAnalyze = async (profiles: string[], analysisType: string, context: a
   }
   
   // Fall back to individual processing for deep/xray
-  return processIndividually(profiles, analysisType, context);
+  return processIndividually(profiles, analysisType as AnalysisType, context); // ✅ FIX: Type assertion
 };
+
 
     function createSmartBatches(profiles: string[], analysisType: string): string[][] {
   // Conservative batching based on analysis complexity
-  const batchSizes = {
+  const batchSizes: Record<string, number> = {  // ✅ FIX: Add index signature
     light: 8,   // Light analysis is fast, bigger batches
     deep: 5,    // Medium complexity
     xray: 3     // Complex analysis, smaller batches
@@ -278,9 +282,9 @@ const batchAnalyze = async (profiles: string[], analysisType: string, context: a
       
       // Collect results
       batchResults.forEach(batchResult => {
-        if (batchResult.success) {
+        if (batchResult.success && batchResult.result) {  // ✅ FIX: Add null check
           results.push(batchResult.result);
-        } else {
+        } else if (batchResult.profile && batchResult.error) {  // ✅ FIX: Add null check
           errors.push({ profile: batchResult.profile, error: batchResult.error });
         }
       });
@@ -303,7 +307,7 @@ const supabaseUrl = await getApiKey('SUPABASE_URL', c.env, c.env.APP_ENV);
 const serviceRole = await getApiKey('SUPABASE_SERVICE_ROLE', c.env, c.env.APP_ENV);
 
 for (const result of results) {
-  const score = Math.round(parseFloat(result.analysis?.overall_score) || 0);
+  const score = Math.round(result.analysis?.overall_score || 0);  // ✅ FIX: Remove parseFloat - already a number
   const creditCost = analysis_type === 'xray' ? 3 : (analysis_type === 'deep' ? 2 : 1);
   
   const rpcResponse = await fetch(`${supabaseUrl}/rest/v1/rpc/increment_usage_tracking`, {
