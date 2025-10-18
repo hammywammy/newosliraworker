@@ -1,5 +1,5 @@
 import { Context } from 'hono';
-import type { Env, BulkAnalysisRequest, BulkAnalysisResult, AnalysisResponse } from '@/shared/types/index.js';
+import type { Env, BulkAnalysisRequest, BulkAnalysisResult, AnalysisResponse, AnalysisType } from '@/shared/types/index.js';
 import { generateRequestId, logger } from '@/shared/utils/logger.util.js';
 import { createStandardResponse } from '@/shared/utils/response.util.js';
 import { updateCreditsAndTransaction, fetchUserAndCredits, fetchBusinessProfile } from '@/infrastructure/database/supabase.repository.js';
@@ -7,6 +7,137 @@ import { extractUsername, normalizeRequest } from '@/shared/utils/validation.uti
 import { getApiKey } from '@/infrastructure/config/config-manager.js';
 import { scrapeInstagramProfile } from '@/domain/scraping/instagram-scraper.service.js';
 import { DirectAnalysisExecutor } from '@/domain/analysis/direct-analysis.service.js';
+import { UniversalAIAdapter } from '@/domain/ai/universal-adapter.service.js';
+
+// FIX: Add missing batch size mapping with proper typing
+const batchSizes: Record<AnalysisType, number> = {
+  light: 5,
+  deep: 3,
+  xray: 1
+};
+
+// FIX: Add missing helper functions
+function buildBatchLightAnalysisPrompt(profiles: string[], business: any): string {
+  const profilesList = profiles.map((username, i) => `${i + 1}. @${username}`).join('\n');
+  
+  return `Analyze these ${profiles.length} Instagram profiles for partnership with ${business.name || business.business_name}:
+
+${profilesList}
+
+Business Context:
+- Industry: ${business.industry || business.business_niche || 'Not specified'}
+- Target Audience: ${business.target_audience || 'General'}
+- Value Proposition: ${business.value_proposition || business.business_one_liner || 'Not specified'}
+
+For each profile, return a JSON object with:
+- username: string
+- score: number (0-100)
+- summary: string (brief reason for score)
+- confidence: number (0.0-1.0)
+
+Return as array: [{ username, score, summary, confidence }, ...]`;
+}
+
+function parseBatchResults(batchResult: any): any[] {
+  try {
+    // Parse the AI response which should be JSON array
+    const content = batchResult.content || batchResult;
+    const parsed = typeof content === 'string' ? JSON.parse(content) : content;
+    return Array.isArray(parsed) ? parsed : [parsed];
+  } catch (error) {
+    logger('error', 'Failed to parse batch results', { error });
+    return [];
+  }
+}
+
+async function processIndividually(
+  profiles: string[], 
+  analysisType: AnalysisType, 
+  context: any
+): Promise<any[]> {
+  const results = [];
+  
+  for (const username of profiles) {
+    try {
+      const result = await analyzeProfile(username, analysisType, context);
+      results.push({ success: true, username, result });
+    } catch (error: any) {
+      logger('error', 'Individual analysis failed', { username, error: error.message });
+      results.push({ success: false, username, error: error.message });
+    }
+  }
+  
+  return results;
+}
+
+// Main analysis function (called by both batch and individual processing)
+async function analyzeProfile(
+  username: string,
+  analysisType: AnalysisType,
+  context: any
+): Promise<AnalysisResponse> {
+  logger('info', 'Analyzing profile', { username, analysisType });
+  
+  // STEP 1: Scrape profile
+  const profileData = await scrapeInstagramProfile(username, analysisType, context.env);
+  
+  // STEP 2: Direct analysis
+  const directExecutor = new DirectAnalysisExecutor(context.env, context.requestId);
+  
+  let directResult: any;
+  switch (analysisType) {
+    case 'light':
+      directResult = await directExecutor.executeLight(profileData, context.business);
+      break;
+    case 'deep':
+      directResult = await directExecutor.executeDeep(profileData, context.business);
+      break;
+    case 'xray':
+      directResult = await directExecutor.executeXRay(profileData, context.business);
+      break;
+    default:
+      throw new Error(`Unsupported analysis type: ${analysisType}`);
+  }
+
+  // STEP 3: Build response
+  const analysisResult: AnalysisResponse = {
+    run_id: `bulk-${Date.now()}-${username}`,
+    profile: {
+      username: profileData.username,
+      displayName: profileData.displayName,
+      followersCount: profileData.followersCount,
+      isVerified: profileData.isVerified,
+      profilePicUrl: profileData.profilePicUrl,
+      dataQuality: profileData.dataQuality || 'medium',
+      scraperUsed: profileData.scraperUsed || 'unknown'
+    },
+    analysis: {
+      overall_score: directResult.analysisData.score,
+      niche_fit_score: directResult.analysisData.niche_fit,
+      engagement_score: directResult.analysisData.engagement_score,
+      type: analysisType,
+      confidence_level: directResult.analysisData.confidence_level,
+      summary_text: directResult.analysisData.quick_summary,
+      audience_quality: directResult.analysisData.audience_quality,
+      selling_points: directResult.analysisData.selling_points || [],
+      reasons: directResult.analysisData.reasons || []
+    },
+    credits: {
+      used: analysisType === 'deep' ? 2 : analysisType === 'xray' ? 3 : 1,
+      remaining: context.userCredits - (analysisType === 'deep' ? 2 : analysisType === 'xray' ? 3 : 1),
+      actual_cost: directResult.costDetails.actual_cost
+    },
+    metadata: {
+      request_id: context.requestId,
+      analysis_completed_at: new Date().toISOString(),
+      schema_version: '3.1',
+      system_used: 'bulk_direct'
+    }
+  };
+  
+  return analysisResult;
+}
+
 export async function handleBulkAnalyze(c: Context<{ Bindings: Env }>): Promise<Response> {
   const requestId = generateRequestId();
   
