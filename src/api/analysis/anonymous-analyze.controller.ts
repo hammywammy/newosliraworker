@@ -11,6 +11,7 @@ import { withScraperRetry } from '@/shared/utils/scraper-error-handler.util.js';
 import { getScraperConfigsAdvanced, validateAndTransformScraperData } from '@/domain/scraping/scraper-configs.js';
 import { getApiKey } from '@/infrastructure/config/config-manager.js';
 import { extractUsername } from '@/shared/utils/validation.util.js';
+import { scrapeInstagramProfile } from '@/domain/scraping/instagram-scraper.service.js';
 
 // ===============================================================================
 // RATE LIMITING WITH CLOUDFLARE KV
@@ -73,8 +74,6 @@ if (rateLimitData.attempts.length >= 1) {
 
 async function performAnonymousAnalysis(username: string, env: Env): Promise<any> {
   try {
-    // STEP 1: Use the same scraper system as main analyze
-    const { scrapeInstagramProfile } = await import('../services/instagram-scraper.js');
     const profileData = await scrapeInstagramProfile(username, 'light', env);
     
     logger('info', 'Profile scraped successfully for anonymous analysis', { 
