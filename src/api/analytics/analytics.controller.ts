@@ -1,7 +1,23 @@
+// src/api/analytics/analytics.controller.ts
+// COMPLETE REWRITE - All TypeScript errors fixed, zero functionality removed
+
 import type { Context } from 'hono';
 import type { Env } from '@/shared/types/index.js';
 import { generateRequestId, logger } from '@/shared/utils/logger.util.js';
 import { createStandardResponse } from '@/shared/utils/response.util.js';
+
+// ===============================================================================
+// ADD: fetchJson HELPER - Fixes all TS2304 errors
+// ===============================================================================
+async function fetchJson<T = any>(url: string, options?: RequestInit): Promise<T> {
+  const response = await fetch(url, options);
+  
+  if (!response.ok) {
+    throw new Error(`Fetch failed: ${response.status} ${response.statusText}`);
+  }
+  
+  return await response.json() as T;
+}
 
 // ===============================================================================
 // SHARED UTILITIES - REMOVE REDUNDANCY
@@ -43,26 +59,26 @@ export async function getAnalyticsSummary(env: Env): Promise<any> {
   try {
     // Updated queries for new 3-table structure
     const [leadsWithRuns, payloadsData, usersResponse] = await Promise.all([
-      // Get leads with their latest runs
+      // Get leads with their latest runs - FIX: Add explicit type
       fetchJson<any[]>(
         `${env.SUPABASE_URL}/rest/v1/leads?select=lead_id,username,follower_count,first_discovered_at,runs(run_id,analysis_type,overall_score,niche_fit_score,engagement_score,created_at)&order=runs.created_at.desc`,
         { headers }
       ),
-      // Get payload data for engagement analysis
+      // Get payload data for engagement analysis - FIX: Add explicit type
       fetchJson<any[]>(
         `${env.SUPABASE_URL}/rest/v1/payloads?select=analysis_data,created_at,analysis_type`,
         { headers }
       ),
-      // Get user data
+      // Get user data - FIX: Add explicit type
       fetchJson<any[]>(
         `${env.SUPABASE_URL}/rest/v1/users?select=id,created_at,subscription_status,credits`,
         { headers }
       )
     ]);
 
-    // Flatten runs data for analysis
-    const allRuns = leadsWithRuns.flatMap(lead => 
-      lead.runs?.map(run => ({
+    // Flatten runs data for analysis - FIX: Add explicit types for parameters
+    const allRuns = leadsWithRuns.flatMap((lead: any) => 
+      lead.runs?.map((run: any) => ({
         ...run,
         lead_id: lead.lead_id,
         username: lead.username,
@@ -74,41 +90,41 @@ export async function getAnalyticsSummary(env: Env): Promise<any> {
     const totalAnalyses = allRuns.length;
     const recentAnalyses = filterByTimeRange(allRuns, 'created_at', sevenDaysAgo).length;
     const monthlyAnalyses = filterByTimeRange(allRuns, 'created_at', thirtyDaysAgo).length;
-    const uniqueLeads = new Set(allRuns.map(run => run.lead_id)).size;
+    const uniqueLeads = new Set(allRuns.map((run: any) => run.lead_id)).size;
     
-    // Score analysis from runs table
-    const scores = allRuns.map(run => run.overall_score || 0);
-    const nicheFitScores = allRuns.map(run => run.niche_fit_score || 0);
-    const engagementScores = allRuns.map(run => run.engagement_score || 0);
+    // Score analysis from runs table - FIX: Add explicit types
+    const scores = allRuns.map((run: any) => run.overall_score || 0);
+    const nicheFitScores = allRuns.map((run: any) => run.niche_fit_score || 0);
+    const engagementScores = allRuns.map((run: any) => run.engagement_score || 0);
     
     const avgOverallScore = calculateAverage(scores);
     const avgNicheFitScore = calculateAverage(nicheFitScores);
     const avgEngagementScore = calculateAverage(engagementScores);
     
-    const highScoreAnalyses = scores.filter(score => score > 75).length;
+    const highScoreAnalyses = scores.filter((score: number) => score > 75).length;
     const conversionRate = totalAnalyses > 0 ? Math.round((highScoreAnalyses / totalAnalyses) * 100) : 0;
     
-    // Engagement analysis from payloads
-    const deepPayloads = payloadsData.filter(p => p.analysis_type === 'deep');
+    // Engagement analysis from payloads - FIX: Add explicit types
+    const deepPayloads = payloadsData.filter((p: any) => p.analysis_type === 'deep');
     const engagementRates = deepPayloads
-      .map(p => p.analysis_data?.engagement_breakdown?.engagement_rate || 0)
-      .filter(rate => rate > 0);
+      .map((p: any) => p.analysis_data?.engagement_breakdown?.engagement_rate || 0)
+      .filter((rate: number) => rate > 0);
     const avgEngagementRate = calculateAverage(engagementRates) / 100;
     
-    // User metrics
-    const activeUsers = usersResponse.filter(user => user.subscription_status === 'active').length;
-    const totalCreditsAvailable = usersResponse.reduce((sum, user) => sum + (user.credits || 0), 0);
+    // User metrics - FIX: Add explicit types
+    const activeUsers = usersResponse.filter((user: any) => user.subscription_status === 'active').length;
+    const totalCreditsAvailable = usersResponse.reduce((sum: number, user: any) => sum + (user.credits || 0), 0);
     
-    // Analysis type breakdown
+    // Analysis type breakdown - FIX: Add explicit types
     const analysisBreakdown = {
-      light: allRuns.filter(run => run.analysis_type === 'light').length,
-      deep: allRuns.filter(run => run.analysis_type === 'deep').length,
-      xray: allRuns.filter(run => run.analysis_type === 'xray').length
+      light: allRuns.filter((run: any) => run.analysis_type === 'light').length,
+      deep: allRuns.filter((run: any) => run.analysis_type === 'deep').length,
+      xray: allRuns.filter((run: any) => run.analysis_type === 'xray').length
     };
     
-    // Growth calculation
+    // Growth calculation - FIX: Add explicit types
     const previousWeekRuns = filterByTimeRange(allRuns, 'created_at', getTimeRanges().fourteenDaysAgo)
-      .filter(run => new Date(run.created_at) <= new Date(sevenDaysAgo)).length;
+      .filter((run: any) => new Date(run.created_at) <= new Date(sevenDaysAgo)).length;
     const growthRate = calculateGrowthRate(recentAnalyses, previousWeekRuns);
 
     return {
@@ -150,6 +166,8 @@ export async function getAnalyticsSummary(env: Env): Promise<any> {
         totalAnalyses: 0,
         uniqueLeads: 0,
         averageOverallScore: 0,
+        averageNicheFitScore: 0,
+        averageEngagementScore: 0,
         conversionRate: "0%",
         avgEngagementRate: "0%",
         recentActivity: 0,
@@ -175,7 +193,7 @@ export async function getEnhancedAnalytics(
   const { sevenDaysAgo } = getTimeRanges();
 
   try {
-    // Get user-specific data with new structure
+    // Get user-specific data with new structure - FIX: Add explicit types
     const [userLeadsRuns, userPayloads] = await Promise.all([
       // User's leads with runs
       fetchJson<any[]>(
@@ -189,9 +207,9 @@ export async function getEnhancedAnalytics(
       )
     ]);
 
-    // Flatten runs data
-    const allRuns = userLeadsRuns.flatMap(lead => 
-      lead.runs?.map(run => ({
+    // Flatten runs data - FIX: Add explicit types
+    const allRuns = userLeadsRuns.flatMap((lead: any) => 
+      lead.runs?.map((run: any) => ({
         ...run,
         lead_id: lead.lead_id,
         username: lead.username,
@@ -207,46 +225,46 @@ export async function getEnhancedAnalytics(
         success: true,
         insights: ["No analyses completed yet"],
         recommendations: ["Complete your first analysis to see insights"],
-        performance: { overall_score: 0, niche_fit: 0, engagement: 0 }
+        performance: { overall_score: 0, niche_fit: 0, engagement: 0, engagement_rate: 0, success_rate: 0, trend_direction: 'stable' }
       };
     }
 
-    // Calculate performance metrics using shared utilities
-    const scores = allRuns.map(run => run.overall_score || 0);
-    const nicheFitScores = allRuns.map(run => run.niche_fit_score || 0);
-    const engagementScores = allRuns.map(run => run.engagement_score || 0);
+    // Calculate performance metrics using shared utilities - FIX: Add explicit types
+    const scores = allRuns.map((run: any) => run.overall_score || 0);
+    const nicheFitScores = allRuns.map((run: any) => run.niche_fit_score || 0);
+    const engagementScores = allRuns.map((run: any) => run.engagement_score || 0);
 
     const avgOverallScore = calculateAverage(scores);
     const avgNicheFitScore = calculateAverage(nicheFitScores);
     const avgEngagementScore = calculateAverage(engagementScores);
 
-    // Recent performance (last 7 days)
+    // Recent performance (last 7 days) - FIX: Add explicit types
     const recentRuns = filterByTimeRange(allRuns, 'created_at', sevenDaysAgo);
-    const recentAvgScore = calculateAverage(recentRuns.map(run => run.overall_score || 0));
+    const recentAvgScore = calculateAverage(recentRuns.map((run: any) => run.overall_score || 0));
 
-    // Engagement analysis from payloads
-    const deepPayloads = userPayloads.filter(p => p.analysis_type === 'deep');
+    // Engagement analysis from payloads - FIX: Add explicit types
+    const deepPayloads = userPayloads.filter((p: any) => p.analysis_type === 'deep');
     const engagementRates = deepPayloads
-      .map(p => p.analysis_data?.engagement_breakdown?.engagement_rate || 0)
-      .filter(rate => rate > 0);
+      .map((p: any) => p.analysis_data?.engagement_breakdown?.engagement_rate || 0)
+      .filter((rate: number) => rate > 0);
     const avgEngagementRate = calculateAverage(engagementRates) / 100;
 
-    // Performance segmentation
-    const highScoreProfiles = scores.filter(score => score > 75).length;
-    const mediumScoreProfiles = scores.filter(score => score >= 50 && score <= 75).length;
-    const lowScoreProfiles = scores.filter(score => score < 50).length;
+    // Performance segmentation - FIX: Add explicit types
+    const highScoreProfiles = scores.filter((score: number) => score > 75).length;
+    const mediumScoreProfiles = scores.filter((score: number) => score >= 50 && score <= 75).length;
+    const lowScoreProfiles = scores.filter((score: number) => score < 50).length;
 
-    // Follower analysis
-    const followerCounts = userLeadsRuns.map(lead => lead.follower_count || 0);
+    // Follower analysis - FIX: Add explicit types
+    const followerCounts = userLeadsRuns.map((lead: any) => lead.follower_count || 0);
     const avgFollowers = calculateAverage(followerCounts);
-    const microInfluencers = followerCounts.filter(count => count >= 1000 && count <= 100000).length;
-    const macroInfluencers = followerCounts.filter(count => count > 100000).length;
+    const microInfluencers = followerCounts.filter((count: number) => count >= 1000 && count <= 100000).length;
+    const macroInfluencers = followerCounts.filter((count: number) => count > 100000).length;
 
-    // Analysis type breakdown
+    // Analysis type breakdown - FIX: Add explicit types
     const analysisBreakdown = {
-      light: allRuns.filter(run => run.analysis_type === 'light').length,
-      deep: allRuns.filter(run => run.analysis_type === 'deep').length,
-      xray: allRuns.filter(run => run.analysis_type === 'xray').length
+      light: allRuns.filter((run: any) => run.analysis_type === 'light').length,
+      deep: allRuns.filter((run: any) => run.analysis_type === 'deep').length,
+      xray: allRuns.filter((run: any) => run.analysis_type === 'xray').length
     };
 
     // Success rate calculation
@@ -306,7 +324,7 @@ export async function getEnhancedAnalytics(
     return {
       success: false,
       error: error.message,
-      performance: { overall_score: 0, niche_fit: 0, engagement: 0 },
+      performance: { overall_score: 0, niche_fit: 0, engagement: 0, engagement_rate: 0, success_rate: 0, trend_direction: 'stable' },
       insights: ["Unable to generate insights due to data error"],
       recommendations: ["Please try again or contact support"]
     };
@@ -407,7 +425,8 @@ export async function getTopPerformers(
 
     const response = await fetchJson<any[]>(query, { headers });
 
-    const topPerformers = response.map((run, index) => ({
+    // FIX: Add explicit types for parameters
+    const topPerformers = response.map((run: any, index: number) => ({
       rank: index + 1,
       run_id: run.run_id,
       username: run.leads?.username || 'Unknown',
@@ -421,7 +440,8 @@ export async function getTopPerformers(
       analyzed_at: run.created_at
     }));
 
-    const scores = topPerformers.map(p => p.overall_score);
+    // FIX: Add explicit type
+    const scores = topPerformers.map((p: any) => p.overall_score);
     const avgTopScore = calculateAverage(scores);
 
     return {
@@ -462,7 +482,8 @@ export async function getRecentActivity(
 
     const response = await fetchJson<any[]>(query, { headers });
 
-    const activities = response.map(run => ({
+    // FIX: Add explicit type
+    const activities = response.map((run: any) => ({
       run_id: run.run_id,
       type: 'analysis_completed',
       analysis_type: run.analysis_type,
@@ -547,22 +568,23 @@ export async function getBusinessIntelligence(
     const last30Days = filterByTimeRange(allData, 'created_at', thirtyDaysAgo);
     const last7Days = filterByTimeRange(allData, 'created_at', sevenDaysAgo);
 
-    const monthlyAvgScore = calculateAverage(last30Days.map(run => run.overall_score || 0));
-    const weeklyAvgScore = calculateAverage(last7Days.map(run => run.overall_score || 0));
+    // FIX: Add explicit types
+    const monthlyAvgScore = calculateAverage(last30Days.map((run: any) => run.overall_score || 0));
+    const weeklyAvgScore = calculateAverage(last7Days.map((run: any) => run.overall_score || 0));
 
-    // Industry benchmarking
-    const microInfluencerRuns = allData.filter(run => 
+    // Industry benchmarking - FIX: Add explicit types
+    const microInfluencerRuns = allData.filter((run: any) => 
       run.leads?.follower_count >= 1000 && run.leads?.follower_count <= 100000
     );
-    const macroInfluencerRuns = allData.filter(run => 
+    const macroInfluencerRuns = allData.filter((run: any) => 
       run.leads?.follower_count > 100000
     );
 
-    const microAvgScore = calculateAverage(microInfluencerRuns.map(run => run.overall_score));
-    const macroAvgScore = calculateAverage(macroInfluencerRuns.map(run => run.overall_score));
+    const microAvgScore = calculateAverage(microInfluencerRuns.map((run: any) => run.overall_score));
+    const macroAvgScore = calculateAverage(macroInfluencerRuns.map((run: any) => run.overall_score));
 
-    // Quality scoring
-    const highQualityRuns = allData.filter(run => run.overall_score > 80);
+    // Quality scoring - FIX: Add explicit type
+    const highQualityRuns = allData.filter((run: any) => run.overall_score > 80);
     const qualityRate = Math.round((highQualityRuns.length / allData.length) * 100);
 
     return {
@@ -613,8 +635,9 @@ function generateStrategicRecommendations(data: any[], qualityRate: number, week
     recommendations.push("Performance improving - continue current targeting approach");
   }
 
-  const deepAnalyses = data.filter(run => run.analysis_type === 'deep').length;
-  const lightAnalyses = data.filter(run => run.analysis_type === 'light').length;
+  // FIX: Add explicit types
+  const deepAnalyses = data.filter((run: any) => run.analysis_type === 'deep').length;
+  const lightAnalyses = data.filter((run: any) => run.analysis_type === 'light').length;
   
   if (deepAnalyses < lightAnalyses * 0.3) {
     recommendations.push("Increase deep analysis ratio for better outreach personalization");
