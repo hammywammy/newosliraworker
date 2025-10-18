@@ -1,6 +1,7 @@
 import type { Context } from 'hono';
 import { getEnhancedConfigManager } from '@/infrastructure/config/config-manager.js';
 import { generateRequestId, logger } from '@/shared/utils/logger.util.js';
+import { callWithRetry } from '@/shared/utils/helpers.util.js';
 
 /**
  * Handle public configuration requests
