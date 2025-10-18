@@ -289,6 +289,86 @@ const requiredKeys = [
   }
 }
 
+async getConfigStatus(): Promise<Record<string, any>> {
+    const status: Record<string, any> = {};
+    
+    const allKeys = [
+      ...this.AWS_MANAGED_KEYS,
+      'AWS_ACCESS_KEY_ID',
+      'AWS_SECRET_ACCESS_KEY',
+      'AWS_REGION',
+      'ADMIN_TOKEN'
+    ];
+    
+    for (const key of allKeys) {
+      try {
+        const value = await this.getConfig(key);
+        const isAWSManaged = this.AWS_MANAGED_KEYS.includes(key);
+        
+        status[key] = {
+          configured: !!value,
+          source: isAWSManaged ? 'aws' : 'env',
+          aws_managed: isAWSManaged,
+          has_value: !!value,
+          value_length: value?.length || 0,
+          cached: this.cache.has(key)
+        };
+      } catch (error: any) {
+        status[key] = {
+          configured: false,
+          error: error.message,
+          source: 'unknown'
+        };
+      }
+    }
+    
+    return status;
+  }
+
+  /**
+   * Migrate a key from environment/Supabase to AWS Secrets Manager
+   * @param keyName - Key to migrate
+   */
+  async migrateToAWS(keyName: string): Promise<void> {
+    if (!this.AWS_MANAGED_KEYS.includes(keyName)) {
+      throw new Error(`${keyName} is not configured for AWS management`);
+    }
+    
+    if (!this.awsSecrets?.isConfigured()) {
+      throw new Error('AWS Secrets Manager not configured - cannot migrate');
+    }
+    
+    try {
+      // Get current value from environment or Supabase
+      const currentValue = this.env[keyName as keyof Env];
+      
+      if (!currentValue || typeof currentValue !== 'string') {
+        throw new Error(`${keyName} not found in environment or has invalid type`);
+      }
+      
+      // Store in AWS with environment prefix
+      const environment = this.env.APP_ENV || 'production';
+      const awsPath = `${environment}/${keyName}`;
+      
+      await this.awsSecrets.putSecret(awsPath, currentValue, 'migration-script');
+      
+      logger('info', `Successfully migrated ${keyName} to AWS`, {
+        awsPath,
+        environment,
+        valueLength: currentValue.length
+      });
+      
+      // Clear cache to force reload from AWS
+      this.clearCache(keyName, environment);
+      
+    } catch (error: any) {
+      logger('error', `Failed to migrate ${keyName} to AWS`, {
+        error: error.message
+      });
+      throw new Error(`Migration failed for ${keyName}: ${error.message}`);
+    }
+  }
+
 // Singleton instance
 let enhancedConfigManager: EnhancedConfigManager | null = null;
 
