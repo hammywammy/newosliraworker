@@ -672,8 +672,12 @@ private async executePersonalityAnalysis(profile: ProfileData): Promise<any> {
     
     logger('info', '✅ Personality complete', {
       username: profile.username,
-      disc: response.content?.disc_profile,
-      authenticity: response.content?.content_authenticity,
+const parsedContent = typeof response.content === 'string' 
+  ? JSON.parse(response.content) 
+  : response.content;,
+
+disc: parsedContent?.disc_profile,
+authenticity: parsedContent?.content_authenticity,
       cost: response.usage.total_cost,
       requestId: this.requestId
     });
