@@ -93,13 +93,15 @@ async getConfig(keyName: string, environment?: string): Promise<string> {
 } else {
   // Non-AWS-managed keys MUST be in Cloudflare environment variables
   // Examples: AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_REGION, ADMIN_TOKEN
-  value = this.env[keyName as keyof Env] || '';
+  const envValue = this.env[keyName as keyof Env];
+  value = typeof envValue === 'string' ? envValue : ''; // ✅ FIX: Type guard
   source = 'env';
   
   if (!value) {
     logger('error', `Non-AWS key not found in environment: ${keyName}`);
   }
 }
+
 
       if (!value) {
         logger('error', `No value found for config key: ${cacheKey}`);
@@ -127,10 +129,11 @@ async getConfig(keyName: string, environment?: string): Promise<string> {
       logger('error', `Failed to retrieve config for ${cacheKey}`, { error: error.message });
       
       // Last resort: environment variable
-      const envValue = this.env[keyName as keyof Env] || '';
-      if (envValue) {
+      const envValue = this.env[keyName as keyof Env];
+      const stringValue = typeof envValue === 'string' ? envValue : ''; // ✅ FIX: Type guard
+      if (stringValue) {
         logger('info', `Using environment fallback for ${keyName}`);
-        return envValue;
+        return stringValue;
       }
       
       return '';
@@ -287,9 +290,9 @@ const requiredKeys = [
       ttl: this.CACHE_TTL
     };
   }
-}
 
-async getConfigStatus(): Promise<Record<string, any>> {
+  // ✅ FIX: Move getConfigStatus INSIDE class (remove the closing brace above)
+  async getConfigStatus(): Promise<Record<string, any>> {
     const status: Record<string, any> = {};
     
     const allKeys = [
@@ -368,6 +371,7 @@ async getConfigStatus(): Promise<Record<string, any>> {
       throw new Error(`Migration failed for ${keyName}: ${error.message}`);
     }
   }
+} 
 
 // Singleton instance
 let enhancedConfigManager: EnhancedConfigManager | null = null;
