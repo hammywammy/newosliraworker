@@ -202,7 +202,8 @@ export function buildScraperUrl(endpoint: string, token: string): string {
 }
 
 // Dynamic field extraction using mappings
-export function extractFieldValue(data: any, fieldMapping: string[]): any {
+export function extractFieldValue(data: any, fieldMapping: readonly string[]): any {
+  // ✅ FIX: Changed parameter type from string[] to readonly string[]
   for (const field of fieldMapping) {
     if (data[field] !== undefined && data[field] !== null) {
       return data[field];
