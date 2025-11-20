@@ -9,11 +9,9 @@ import { scrapeInstagramProfile } from '@/domain/scraping/instagram-scraper.serv
 import { DirectAnalysisExecutor } from '@/domain/analysis/direct-analysis.service.js';
 import { UniversalAIAdapter } from '@/domain/ai/universal-adapter.service.js';
 
-// FIX: Add missing batch size mapping with proper typing
+// SIMPLIFIED: Only light analysis is supported
 const batchSizes: Record<AnalysisType, number> = {
-  light: 5,
-  deep: 3,
-  xray: 1
+  light: 5
 };
 
 // FIX: Add missing helper functions
@@ -84,20 +82,12 @@ async function analyzeProfile(
   // STEP 2: Direct analysis
   const directExecutor = new DirectAnalysisExecutor(context.env, context.requestId);
   
-  let directResult: any;
-  switch (analysisType) {
-    case 'light':
-      directResult = await directExecutor.executeLight(profileData, context.business);
-      break;
-    case 'deep':
-      directResult = await directExecutor.executeDeep(profileData, context.business);
-      break;
-    case 'xray':
-      directResult = await directExecutor.executeXRay(profileData, context.business);
-      break;
-    default:
-      throw new Error(`Unsupported analysis type: ${analysisType}`);
+  // Only light analysis is supported
+  if (analysisType !== 'light') {
+    throw new Error('Only "light" analysis is supported');
   }
+
+  const directResult = await directExecutor.executeLight(profileData, context.business);
 
   // STEP 3: Build response
   const analysisResult: AnalysisResponse = {
@@ -112,19 +102,13 @@ async function analyzeProfile(
       scraperUsed: profileData.scraperUsed || 'unknown'
     },
     analysis: {
-      overall_score: directResult.analysisData.score,
-      niche_fit_score: directResult.analysisData.niche_fit,
-      engagement_score: directResult.analysisData.engagement_score,
-      type: analysisType,
-      confidence_level: directResult.analysisData.confidence_level,
-      summary_text: directResult.analysisData.quick_summary,
-      audience_quality: directResult.analysisData.audience_quality,
-      selling_points: directResult.analysisData.selling_points || [],
-      reasons: directResult.analysisData.reasons || []
+      overall_score: directResult.analysisData.overall_score,
+      summary_text: directResult.analysisData.summary_text,
+      type: analysisType
     },
     credits: {
-      used: analysisType === 'deep' ? 2 : analysisType === 'xray' ? 3 : 1,
-      remaining: context.userCredits - (analysisType === 'deep' ? 2 : analysisType === 'xray' ? 3 : 1),
+      used: 1, // Always 1 for light
+      remaining: context.userCredits - 1,
       actual_cost: directResult.costDetails.actual_cost
     },
     metadata: {
@@ -180,11 +164,9 @@ const batchAnalyze = async (profiles: string[], analysisType: string, context: a
 
 
     function createSmartBatches(profiles: string[], analysisType: string): string[][] {
-  // Conservative batching based on analysis complexity
-  const batchSizes: Record<string, number> = {  // ✅ FIX: Add index signature
-    light: 8,   // Light analysis is fast, bigger batches
-    deep: 5,    // Medium complexity
-    xray: 3     // Complex analysis, smaller batches
+  // Conservative batching for light analysis
+  const batchSizes: Record<string, number> = {
+    light: 8   // Light analysis is fast, bigger batches
   };
   
   const batchSize = batchSizes[analysisType] || 5;
@@ -213,8 +195,8 @@ const batchAnalyze = async (profiles: string[], analysisType: string, context: a
       return c.json(createStandardResponse(false, undefined, 'profiles array is required and cannot be empty', requestId), 400);
     }
 
-    if (!analysis_type || !['light', 'deep', 'xray'].includes(analysis_type)) {
-      return c.json(createStandardResponse(false, undefined, 'analysis_type must be "light", "deep", or "xray"', requestId), 400);
+    if (!analysis_type || analysis_type !== 'light') {
+      return c.json(createStandardResponse(false, undefined, 'analysis_type must be "light". Deep and XRay have been removed.', requestId), 400);
     }
 
     if (!business_id || !user_id) {
@@ -236,8 +218,8 @@ const batchAnalyze = async (profiles: string[], analysisType: string, context: a
       return c.json(createStandardResponse(false, undefined, userResult.error, requestId), 400);
     }
 
-    // Check credit requirements
-    const creditCostPerAnalysis = analysis_type === 'deep' ? 2 : analysis_type === 'xray' ? 3 : 1;
+    // Check credit requirements (always 1 for light)
+    const creditCostPerAnalysis = 1;
     const totalCreditCost = profileCount * creditCostPerAnalysis;
     
     if (userResult.credits < totalCreditCost) {
@@ -307,8 +289,8 @@ const supabaseUrl = await getApiKey('SUPABASE_URL', c.env, c.env.APP_ENV);
 const serviceRole = await getApiKey('SUPABASE_SERVICE_ROLE', c.env, c.env.APP_ENV);
 
 for (const result of results) {
-  const score = Math.round(result.analysis?.overall_score || 0);  // ✅ FIX: Remove parseFloat - already a number
-  const creditCost = analysis_type === 'xray' ? 3 : (analysis_type === 'deep' ? 2 : 1);
+  const score = Math.round(result.analysis?.overall_score || 0);
+  const creditCost = 1; // Always 1 for light
   
   const rpcResponse = await fetch(`${supabaseUrl}/rest/v1/rpc/increment_usage_tracking`, {
     method: 'POST',
@@ -428,20 +410,12 @@ async function processProfileComplete(
     // STEP 2: Direct analysis (no pipeline overhead)
     const directExecutor = new DirectAnalysisExecutor(context.env, context.requestId);
     
-    let directResult: any;
-    switch (analysisType) {
-      case 'light':
-        directResult = await directExecutor.executeLight(profileData, context.business);
-        break;
-      case 'deep':
-        directResult = await directExecutor.executeDeep(profileData, context.business);
-        break;
-      case 'xray':
-        directResult = await directExecutor.executeXRay(profileData, context.business);
-        break;
-      default:
-        throw new Error(`Unsupported analysis type: ${analysisType}`);
+    // Only light analysis is supported
+    if (analysisType !== 'light') {
+      throw new Error('Only "light" analysis is supported');
     }
+
+    const directResult = await directExecutor.executeLight(profileData, context.business);
 
     // STEP 3: Build response (simplified)
     const analysisResult: AnalysisResponse = {
@@ -456,18 +430,12 @@ async function processProfileComplete(
         scraperUsed: profileData.scraperUsed || 'unknown'
       },
       analysis: {
-        overall_score: directResult.analysisData.score,
-        niche_fit_score: directResult.analysisData.niche_fit,
-        engagement_score: directResult.analysisData.engagement_score,
-        type: analysisType as any,
-        confidence_level: directResult.analysisData.confidence_level,
-        summary_text: directResult.analysisData.quick_summary,
-        audience_quality: directResult.analysisData.audience_quality,
-        selling_points: directResult.analysisData.selling_points || [],
-        reasons: directResult.analysisData.reasons || []
+        overall_score: directResult.analysisData.overall_score,
+        summary_text: directResult.analysisData.summary_text,
+        type: analysisType as any
       },
       credits: {
-        used: analysisType === 'deep' ? 2 : analysisType === 'xray' ? 3 : 1,
+        used: 1, // Always 1 for light
         remaining: 0, // Will be calculated in bulk handler
         actual_cost: directResult.costDetails.actual_cost
       },

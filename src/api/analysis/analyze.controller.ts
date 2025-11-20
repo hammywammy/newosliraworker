@@ -28,13 +28,23 @@ export async function handleAnalyze(c: Context<{ Bindings: Env }>): Promise<Resp
       return c.json(createStandardResponse(false, undefined, userResult.error, requestId), 400);
     }
 
-    // Check credit requirements
-    const creditCost = analysis_type === 'deep' ? 2 : analysis_type === 'xray' ? 3 : 1;
+    // Validate analysis type
+    if (analysis_type !== 'light') {
+      return c.json(createStandardResponse(
+        false,
+        undefined,
+        'Only "light" analysis is supported. Deep and XRay analysis have been removed.',
+        requestId
+      ), 400);
+    }
+
+    // Check credit requirements (always 1 for light)
+    const creditCost = 1;
     if (userResult.credits < creditCost) {
       return c.json(createStandardResponse(
-        false, 
-        undefined, 
-        `Insufficient credits. Required: ${creditCost}, Available: ${userResult.credits}`, 
+        false,
+        undefined,
+        `Insufficient credits. Required: ${creditCost}, Available: ${userResult.credits}`,
         requestId
       ), 400);
     }
@@ -119,12 +129,8 @@ try {
           },
           analysis: {
             overall_score: preScreen.earlyScore || 0,
-            niche_fit_score: 0,
-            engagement_score: 0,
-            type: analysis_type,
-            confidence_level: 0.9,
             summary_text: preScreen.reason || 'Pre-screened as low quality',
-            audience_quality: 'Low'
+            type: analysis_type
           },
           credits: { used: 0, remaining: userResult.credits },
           metadata: {
@@ -145,45 +151,30 @@ try {
       }
     }
     
-// DIRECT ANALYSIS - Single optimized system
+// LIGHT ANALYSIS ONLY
 let analysisResult;
 let costDetails;
 let processingTime;
 
 try {
-  logger('info', 'Executing direct analysis', { analysis_type, requestId });
+  logger('info', 'Executing light analysis', { requestId });
 
   const directExecutor = new DirectAnalysisExecutor(c.env, requestId);
-  
-  let directResult;
-  switch (analysis_type) {
-    case 'light':
-      directResult = await directExecutor.executeLight(profileData, business);
-      break;
-    case 'deep':
-      directResult = await directExecutor.executeDeep(profileData, business);
-      break;
-    case 'xray':
-      directResult = await directExecutor.executeXRay(profileData, business);
-      break;
-    default:
-      throw new Error(`Unsupported analysis type: ${analysis_type}`);
-  }
+  const directResult = await directExecutor.executeLight(profileData, business);
 
   analysisResult = directResult.analysisData;
   costDetails = directResult.costDetails;
   processingTime = directResult.costDetails.processing_duration_ms;
 
 } catch (analysisError: any) {
-  logger('error', 'Direct analysis failed', { 
+  logger('error', 'Light analysis failed', {
     error: analysisError.message,
-    analysis_type,
     requestId
   });
   return c.json(createStandardResponse(
-    false, 
-    undefined, 
-    `Analysis failed: ${analysisError.message}`, 
+    false,
+    undefined,
+    `Analysis failed: ${analysisError.message}`,
     requestId
   ), 500);
 }
@@ -275,37 +266,9 @@ logger('info', 'Database save successful', {
         scraperUsed: profileData.scraperUsed || 'unknown'
       },
       analysis: {
-        overall_score: analysisResult.score,
-        niche_fit_score: analysisResult.niche_fit,
-        engagement_score: analysisResult.engagement_score,
-        type: analysis_type,
-        confidence_level: analysisResult.confidence_level,
-        summary_text: analysisResult.quick_summary,
-        
-        // Additional analysis fields based on type
-        audience_quality: analysisResult.audience_quality,
-        selling_points: analysisResult.selling_points || [],
-        reasons: analysisResult.reasons || [],
-        
-        // Deep analysis fields
-        ...(analysis_type === 'deep' && {
-          deep_summary: analysisResult.deep_summary,
-          outreach_message: analysisResult.outreach_message,
-          engagement_breakdown: profileData.engagement ? {
-            avg_likes: profileData.engagement.avgLikes,
-            avg_comments: profileData.engagement.avgComments,
-            engagement_rate: profileData.engagement.engagementRate,
-            posts_analyzed: profileData.engagement.postsAnalyzed,
-            data_source: 'real_scraped_calculation'
-          } : null
-        }),
-        
-        // X-Ray analysis fields
-        ...(analysis_type === 'xray' && {
-          copywriter_profile: analysisResult.copywriter_profile || {},
-          commercial_intelligence: analysisResult.commercial_intelligence || {},
-          persuasion_strategy: analysisResult.persuasion_strategy || {}
-        })
+        overall_score: analysisResult.overall_score,
+        summary_text: analysisResult.summary_text,
+        type: analysis_type
       },
       credits: {
         used: creditCost,

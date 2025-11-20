@@ -155,41 +155,13 @@ export async function insertAnalysisRun(
       user_id,
       business_id,
       analysis_type: analysisType,
-      analysis_version: '1.0',
-      
-      overall_score: Math.round(parseFloat(analysisResult.score) || 0),
-      niche_fit_score: Math.round(parseFloat(analysisResult.niche_fit) || 0),
-      engagement_score: Math.round(parseFloat(analysisResult.engagement_score) || 0),
-      
+      analysis_version: '2.0',
 
-summary_text: (() => {
-  switch(analysisType) {
-    case 'light':
-      return analysisResult.summary || 
-             analysisResult.quick_summary || 
-             `Light analysis completed - Score: ${Math.round(parseFloat(analysisResult.score) || 0)}/100`;
-    
-    case 'deep':
-      return analysisResult.quick_summary ||  // ✅ Store SHORT version in runs
-             analysisResult.deep_payload?.deep_summary || 
-             `Deep analysis completed - Score: ${Math.round(parseFloat(analysisResult.score) || 0)}/100`;
-    
-    case 'xray':
-      return analysisResult.xray_payload?.deep_summary || 
-             analysisResult.deep_summary || 
-             analysisResult.quick_summary || 
-             `X-Ray analysis completed - Score: ${Math.round(parseFloat(analysisResult.score) || 0)}/100`;
-    
-    default:
-      return `Analysis completed - Score: ${Math.round(parseFloat(analysisResult.score) || 0)}/100`;
-  }
-})(),
-      confidence_level: parseFloat(analysisResult.confidence_level) || 
-                       parseFloat(analysisResult.confidence) || 
-                       (analysisType === 'light' ? 0.6 : analysisType === 'deep' ? 0.75 : 0.85),
-      
+      overall_score: Math.round(parseFloat(analysisResult.overall_score) || 0),
+      summary_text: analysisResult.summary_text || `Analysis completed - Score: ${Math.round(parseFloat(analysisResult.overall_score) || 0)}/100`,
+
       run_status: 'completed',
-      ai_model_used: analysisResult.pipeline_metadata?.workflow_used || 'pipeline_system',
+      ai_model_used: 'gpt-5-nano',
       analysis_completed_at: new Date().toISOString()
     };
 
@@ -197,9 +169,8 @@ summary_text: (() => {
       lead_id,
       analysis_type: analysisType,
       summary_text: runData.summary_text,
-      confidence_level: runData.confidence_level,
-      summary_length: runData.summary_text?.length,
-      confidence_is_number: typeof runData.confidence_level === 'number'
+      overall_score: runData.overall_score,
+      summary_length: runData.summary_text?.length
     });
 
     const supabaseUrl = await getSupabaseUrl(env);
@@ -252,46 +223,11 @@ export async function insertAnalysisPayload(
       dataKeys: Object.keys(analysisData || {}).length
     });
 
-    let structuredPayload;
-    
-    switch (analysisType) {        
-case 'deep':
-  const deepData = analysisData.deep_payload || analysisData;
-  const engagementData = deepData.engagement_breakdown || {};
-  
-  structuredPayload = {
-    deep_summary: deepData.deep_summary || null,
-    selling_points: deepData.selling_points || [],
-    outreach_message: deepData.outreach_message || null,
-    engagement_breakdown: {
-      avg_likes: parseInt(engagementData.avg_likes) || 0,
-      avg_comments: parseInt(engagementData.avg_comments) || 0,
-      engagement_rate: parseFloat(engagementData.engagement_rate) || 0
-    },
-    latest_posts: deepData.latest_posts || null,
-    audience_insights: deepData.audience_insights || null,
-    reasons: deepData.reasons || [],
-    pre_processed_metrics: analysisData.pre_processed_metrics || null,
-    personality_profile: deepData.personality_profile || null  // NEW
-  };
-  break;
-        
-case 'xray':
-  const xrayData = analysisData.xray_payload || analysisData;
-  structuredPayload = {
-    deep_summary: xrayData.deep_summary || null,
-    copywriter_profile: xrayData.copywriter_profile || {},
-    commercial_intelligence: xrayData.commercial_intelligence || {},
-    persuasion_strategy: xrayData.persuasion_strategy || {},
-    outreach_message: xrayData.outreach_message || null,
-    pre_processed_metrics: analysisData.pre_processed_metrics || null,
-    personality_profile: xrayData.personality_profile || null  // NEW
-  };
-  break;
-        
-      default:
-        structuredPayload = analysisData;
-    }
+    // Light analysis payload (simple structure)
+    const structuredPayload = {
+      overall_score: analysisData.overall_score,
+      summary_text: analysisData.summary_text
+    };
 
     const payloadData = {
       run_id,
@@ -369,8 +305,8 @@ export async function saveCompleteAnalysis(
       throw new Error('insertAnalysisRun returned null/undefined run_id');
     }
     
-    // Step 3: Insert payload (if deep/xray)
-    if (analysisData && (analysisType === 'deep' || analysisType === 'xray')) {
+    // Step 3: Insert payload (light analysis)
+    if (analysisData) {
       const payload_id = await insertAnalysisPayload(
         run_id,
         lead_id,
@@ -385,8 +321,8 @@ export async function saveCompleteAnalysis(
 
 // Step 4: Update usage_tracking with proper atomic increment
 const currentMonth = new Date().toISOString().slice(0, 7) + '-01';
-const creditCost = analysisType === 'xray' ? 3 : (analysisType === 'deep' ? 2 : 1);
-const overallScore = Math.round(parseFloat(analysisData?.score) || 0);
+const creditCost = 1; // Always 1 for light
+const overallScore = Math.round(parseFloat(analysisData?.overall_score) || 0);
 
 const supabaseUrl = await getSupabaseUrl(env);
 const headers = await createHeaders(env);
