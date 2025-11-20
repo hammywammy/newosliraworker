@@ -1,9 +1,7 @@
 // src/shared/types/analysis.types.ts
-// FIX: Add missing properties that are actually used in the codebase
 
-import type { LightPayload, DeepPayload, XRayPayload } from './payload.types.js';
-
-export type AnalysisType = 'light' | 'deep' | 'xray';
+// SIMPLIFIED: Only Light analysis is supported
+export type AnalysisType = 'light';
 
 export interface ProfileData {
   username: string;
@@ -75,65 +73,32 @@ export interface AnalysisResponse {
   };
   analysis: {
     overall_score: number;
-    niche_fit_score: number;
-    engagement_score: number;
+    summary_text: string;
     type: AnalysisType;
-    confidence_level?: number;
-    summary_text?: string;
-    
-    // Deep analysis fields
-    audience_quality?: string;
-    selling_points?: string[];
-    reasons?: string[];
-    deep_summary?: string;
-    outreach_message?: string;
-    
-    // FIX: Allow null for engagement_breakdown
-    engagement_breakdown?: {
-      avg_likes: number;
-      avg_comments: number;
-      engagement_rate: number;
-      posts_analyzed: number;
-      data_source: string;
-    } | null; // ← ADDED | null
-    
-    // X-Ray analysis fields
-    copywriter_profile?: any;
-    commercial_intelligence?: any;
-    persuasion_strategy?: any;
   };
-credits: {
-  used: number;
-  remaining: number;
-  actual_cost?: number;
-  margin?: number; // ← FIX: analyze.controller.ts:314
-};
-metadata: {
-  request_id: string;
-  analysis_completed_at: string;
-  schema_version: string;
-  system_used?: string;
-  performance?: { // ← FIX: analyze.controller.ts:321
-    processing_duration_ms: number;
-    model_used: string;
-    block_type: string;
-    tokens_processed: number;
+  credits: {
+    used: number;
+    remaining: number;
+    actual_cost?: number;
+    margin?: number;
   };
-};
+  metadata: {
+    request_id: string;
+    analysis_completed_at: string;
+    schema_version: string;
+    system_used?: string;
+    performance?: {
+      processing_duration_ms: number;
+      model_used: string;
+      block_type: string;
+      tokens_processed: number;
+    };
+  };
 }
 
 export interface AnalysisResult {
-  score: number;
-  engagement_score: number;
-  niche_fit: number;
-  audience_quality: string;
-  engagement_insights: string;
-  selling_points: string[];
-  reasons: string[];
-  quick_summary?: string;
-  deep_summary?: string;
-  confidence_level?: number;
-  outreach_message?: string;
+  overall_score: number;
+  summary_text: string;
 }
 
 export interface AnalysisRequest {
@@ -149,13 +114,10 @@ export interface AnalysisDetails {
   run_id: string;
   analysis_type: AnalysisType;
   overall_score: number;
-  niche_fit_score: number;
-  engagement_score: number;
   summary_text?: string;
-  confidence_level?: number;
   ai_model_used?: string;
   created_at: string;
-  
+
   leads: {
     username: string;
     display_name?: string;
@@ -165,10 +127,6 @@ export interface AnalysisDetails {
     following_count: number;
     is_verified_account: boolean;
   };
-  
-  payloads?: {
-    analysis_data: LightPayload | DeepPayload | XRayPayload;
-  }[];
 }
 
 export interface ValidationResult {
@@ -176,3 +134,8 @@ export interface ValidationResult {
   error?: string;
   normalizedData?: any;
 }
+
+// ===============================================================================
+// DEPRECATED: Deep and XRay analysis types have been removed
+// Only Light analysis is supported with overall_score and summary_text
+// ===============================================================================

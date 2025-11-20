@@ -3,13 +3,8 @@ import type { PostData, EngagementData, AnalysisType } from '@/shared/types/inde
 
 export function validateAnalysisResult(result: any): any {
   return {
-    score: Math.round(parseFloat(result.score) || 0),
-    engagement_score: Math.round(parseFloat(result.engagement_score) || 0),
-    niche_fit: Math.round(parseFloat(result.niche_fit) || 0),
-    audience_quality: result.audience_quality || 'Unknown',
-    engagement_insights: result.engagement_insights || 'No insights available',
-    selling_points: Array.isArray(result.selling_points) ? result.selling_points : [],
-    reasons: Array.isArray(result.reasons) ? result.reasons : (Array.isArray(result.selling_points) ? result.selling_points : [])
+    overall_score: Math.round(parseFloat(result.overall_score) || 0),
+    summary_text: result.summary_text || 'Analysis completed'
   };
 }
 
@@ -76,8 +71,8 @@ export function normalizeRequest(body: any) {
   const user_id = body.user_id;
 
   if (!profile_url) errors.push('profile_url or username is required');
-  if (!analysis_type || !['light', 'deep', 'xray'].includes(analysis_type)) {
-    errors.push('analysis_type must be "light", "deep", or "xray"');
+  if (!analysis_type || analysis_type !== 'light') {
+    errors.push('analysis_type must be "light". Deep and XRay analysis have been removed.');
   }
   if (!business_id) errors.push('business_id is required');
   if (!user_id) errors.push('user_id is required');
@@ -124,12 +119,7 @@ export function validateProfileData(responseData: any, analysisType?: string): a
     throw new Error('PROFILE_NOT_FOUND');
   }
 
-  // Quick validation for light analysis
-  if (analysisType === 'light') {
-    return buildBasicProfile(profileData);
-  }
-
-  // Enhanced validation for deep/xray analysis
+  // Light analysis only
   return buildEnhancedProfile(profileData);
 }
 
@@ -212,13 +202,12 @@ function buildEnhancedProfile(profileData: any): any {
 
 export function calculateConfidenceLevel(profile: any, analysisType: string): number {
   let confidence = 50;
-  
+
   if (profile.isVerified) confidence += 10;
   if ((profile.engagement?.postsAnalyzed || 0) > 0) confidence += 20;
   if ((profile.engagement?.postsAnalyzed || 0) >= 5) confidence += 10;
-  if (analysisType === 'deep') confidence += 10;
   if (profile.isPrivate) confidence -= 15;
-  
+
   return Math.min(95, Math.max(20, confidence));
 }
 

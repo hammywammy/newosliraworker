@@ -67,12 +67,12 @@ export async function handleGetLeadDetail(c: Context<{ Bindings: Env }>): Promis
         )[0]
       : null;
     
-    // Count total analyses
+    // Count total analyses (only light is supported now)
     const totalAnalyses = lead.runs ? lead.runs.length : 0;
     const analysisCounts = {
       light: lead.runs?.filter((r: any) => r.analysis_type === 'light').length || 0,
-      deep: lead.runs?.filter((r: any) => r.analysis_type === 'deep').length || 0,
-      xray: lead.runs?.filter((r: any) => r.analysis_type === 'xray').length || 0
+      deep: 0, // Deprecated
+      xray: 0  // Deprecated
     };
     
     const leadDetail = {
